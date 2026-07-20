@@ -1,7 +1,7 @@
 ---
-title: 'Pattern C: Deterministic-First Agent Design'
+title: 'Pattern C: Deterministic-First Agentic Pipeline Design'
 sidebarTitle: 'Pattern C'
-description: 'Pattern C separates pipeline work into deterministic rules and LLM judgment — defaulting to auditable rule-based code and reserving AI for tasks that genuinely require reasoning.'
+description: 'Default to rule-based code and use LLM only where judgment is genuinely required — Pattern C keeps pipelines fast, auditable, and cost-efficient.'
 ---
 
 Pattern C is a design principle for agentic pipelines that separates every stage of work into two categories: **deterministic** (rule-based, auditable, cheap) and **judgment** (LLM-driven, context-dependent, justified). Rather than reaching for an LLM at every step, you default to deterministic code and only introduce an agent where genuine reasoning is required and cannot be reduced to a rule.

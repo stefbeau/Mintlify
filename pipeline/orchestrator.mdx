@@ -58,7 +58,7 @@ The Orchestrator handles agent failures without collapsing the entire run. The r
 
 | Failure type | What happened | Orchestrator response |
 |-------------|---------------|----------------------|
-| **Transient** | Tool timeout, temporary service error | Retry with backoff; log each attempt |
+| **Retriable** | Tool timeout, temporary service error | Retry with backoff; log each attempt |
 | **Non-retriable** | Malformed agent output, schema violation | Escalate to you; log the failure with full context |
 | **Partial** | One agent fails, others succeed | Surface the failure at the approval gate; you decide whether to proceed with partial output or restart the run |
 

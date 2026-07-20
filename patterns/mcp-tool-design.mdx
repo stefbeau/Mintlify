@@ -1,7 +1,7 @@
 ---
-title: 'MCP Tool Design: Reliable Agent-Data Interfaces'
+title: 'MCP Tool Design: Reliable Tools for Production Agents'
 sidebarTitle: 'MCP Tool Design'
-description: 'Design MCP tools that agents can call reliably in production — covering single-responsibility tools, structured outputs, typed errors, and write tool guardrails.'
+description: 'Build reliable MCP tools for production agents — single responsibility, structured JSON outputs, typed error responses, and enforced write guardrails.'
 ---
 
 MCP tools are the interface between your agents and live data — page content, metadata, search indexes, approval status, external systems. Getting tool design right is the difference between a pipeline that works in demos and one that works in production. A poorly designed tool produces unpredictable agent behaviour that is difficult to attribute and expensive to debug. A well-designed tool is a reliable, testable contract between your agent and the data it needs.
@@ -96,6 +96,12 @@ const payload = JSON.parse(dataLine.replace('data: ', ''));
 ```
 
 Calling `response.json()` directly will fail — the response body is not raw JSON. Set `Accept: application/json, text/event-stream` in your request headers to signal that your client handles the SSE format.
+
+### Verifying tool availability after deployment
+
+After deploying or updating an MCP tool, verify that agents can discover and call it before running integration tests. A tool that deployed successfully but is not yet visible to the agent runtime will appear as a missing tool error — not a deployment failure — making the root cause non-obvious.
+
+Run a direct tool call against the deployed endpoint to confirm the tool is reachable and returns the expected schema. Do not rely on the deployment step alone as confirmation of tool availability.
 
 <Tip>
 Test MCP tools independently of agent behaviour. An agent test that fails because the underlying tool returned unexpected data is harder to debug than a tool test that catches the issue directly.

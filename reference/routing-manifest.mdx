@@ -1,7 +1,7 @@
 ---
-title: 'Routing Manifest Schema Reference'
+title: 'Routing Manifest Schema: Fields, Types, and Triggers'
 sidebarTitle: 'Routing Manifest'
-description: 'Full schema reference for the routing manifest produced by the Intake agent — eight classification fields that determine which pipeline stages fire for each run.'
+description: 'Schema reference for the routing manifest produced by the Intake agent — ten classification fields that determine which pipeline stages run.'
 ---
 
 The routing manifest is the output of the Intake agent's deterministic triage layer. It classifies the incoming change event across eight dimensions and determines which downstream agents the Orchestrator dispatches. Every classification decision in the manifest is produced by a rule-based detector — no LLM is involved — making the manifest fully deterministic and auditable.

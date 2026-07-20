@@ -1,20 +1,21 @@
 ---
-title: 'Pipeline Overview: Seven Stages, One Lifecycle'
+title: 'Pipeline Overview: Seven Stages, One Documentation Lifecycle'
 sidebarTitle: 'Overview'
-description: 'Explore how the seven-stage pipeline moves a product change event through classification, impact analysis, drafting, human review, quality check, and governance.'
+description: 'How the seven-stage pipeline moves a product change event through classification, impact analysis, drafting, human review, quality check, and governance.'
 ---
 
 When a product change ships, the pipeline takes a structured change event and carries it through seven stages — classifying the change, finding every documentation page it affects, drafting updates, preparing a client announcement, pausing for your review and approval, evaluating the approved content against quality rules, and writing a complete audit record. Nothing reaches your knowledge base until you have explicitly approved it.
 
 ## Pipeline stages
 
-1. **Orchestrator** — Validates the incoming change event payload, interprets the routing manifest, and builds the minimal execution plan for the run. Every agent dispatch flows through the Orchestrator.
-2. **Intake** — Classifies the change event using eight deterministic, rule-based detectors. Produces a routing manifest that tells the Orchestrator which downstream agents to fire. Zero LLM — fully auditable.
-3. **Impact Analysis** — Runs semantic vector search across your documentation corpus to find every page affected by the change. Scores each page by severity and produces a ranked impact manifest.
-4. **Content Prep** — Drafts documentation updates for each affected page as structured DIFF packages — showing current content, proposed content, rationale, and confidence score, ready for your review.
-5. **Communications** — Drafts the client-facing announcement that accompanies the documentation update, applying voice, tone, and terminology standards automatically.
-6. **Quality Review** — After your approval, evaluates the approved content against 77 rules across prose, style, and terminology categories. Surfaces findings before anything enters the knowledge base.
-7. **Governance** — Assembles the complete run log, writes the corpus change record, publishes health metrics, and flags any anomalies for your attention.
+- **Stage 0 — Orchestrator** — Validates the incoming change event payload, interprets the routing manifest, and builds the minimal execution plan for the run. Every agent dispatch flows through the Orchestrator.
+- **Stage 1 — Intake** — Classifies the change event using eight deterministic, rule-based detectors. Produces a routing manifest that tells the Orchestrator which downstream agents to fire. Zero LLM — fully auditable.
+- **Stage 2 — Impact Analysis** — Runs semantic vector search across your documentation corpus to find every page affected by the change. Scores each page by severity and produces a ranked impact manifest.
+- **Stage 3 — Content Prep** — Drafts documentation updates for each affected page as structured DIFF packages — showing current content, proposed content, rationale, and confidence score, ready for your review.
+- **Stage 4 — Communications** — Drafts the client-facing announcement that accompanies the documentation update, applying voice, tone, and terminology standards automatically.
+- **[Human Approval Gate]** — The pipeline pauses for your review. You approve, edit, or reject each proposal before anything proceeds.
+- **Stage 5 — Quality Review** — After your approval, evaluates the approved content against 77 rules across prose, style, and terminology categories. Surfaces findings before anything enters the knowledge base.
+- **Stage 6 — Governance** — Assembles the complete run log, writes the corpus change record, publishes health metrics, and flags any anomalies for your attention.
 
 ## Stage flow
 
@@ -109,5 +110,14 @@ The Human Approval Gate between Stage 4 and Stage 5 is mandatory and cannot be b
   </Card>
   <Card title="Content Prep" icon="pen-to-square" href="/pipeline/content-prep">
     Structured DIFF packages showing exactly what changes, why, and with what confidence.
+  </Card>
+  <Card title="Communications" icon="megaphone" href="/pipeline/communications">
+    Drafts the client-facing announcement with voice, tone, and terminology standards applied.
+  </Card>
+  <Card title="Quality Review" icon="circle-check" href="/pipeline/quality-review">
+    77-rule evaluation across prose, style, and terminology — run after your approval.
+  </Card>
+  <Card title="Governance" icon="shield-halved" href="/pipeline/governance">
+    Run log, corpus change record, health metrics, and anomaly detection for every run.
   </Card>
 </CardGroup>

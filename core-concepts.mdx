@@ -16,7 +16,7 @@ The key fields in a change event are:
 |-------|-------------|
 | `change_id` | A unique identifier for this change. Used to link the full audit trail back to its source. |
 | `change_type` | The nature of the change: `new_feature`, `enhancement`, `deprecation`, or `fix`. |
-| `scope` | How broadly the change applies: `single` (one product area), `cross_product`, or `platform_wide`. |
+| `scope` | How broadly the change applies: `single` (one product area), `cross_product`, or `platform`. |
 | `audience` | Who the change affects: `internal`, `client`, or `developer`. |
 | `urgency` | How quickly the documentation update is needed: `routine`, `expedited`, or `emergency`. |
 | `summary` | A short description of what changed. Used in retrieval and communications drafting. |
@@ -28,20 +28,16 @@ The routing manifest is what the Intake agent produces after classifying a chang
 
 ```json
 {
-  "change_id": "chg-2026-0042",
-  "routing_manifest": {
-    "change_type": "enhancement",
-    "scope": "single",
-    "audience": "client",
-    "urgency": "routine",
-    "notify_trigger": true,
-    "content_trigger": true,
-    "review_trigger": true,
-    "escalation_trigger": false
-  },
-  "classification_method": "deterministic",
-  "llm_used": false,
-  "confidence": 0.97
+  "change_type": "enhancement",
+  "scope": "single",
+  "audience": "client",
+  "urgency": "routine",
+  "notify_trigger": "required",
+  "content_trigger": "required",
+  "review_trigger": "required",
+  "escalation_trigger": "proceed",
+  "confidence": 0.94,
+  "detector_version": "2.1.0"
 }
 ```
 
@@ -103,12 +99,13 @@ The DIFF package is what the Content Prep agent produces for each affected page.
 ```json
 {
   "page_id": "doc-data-exports",
-  "diff": {
-    "current_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV format.",
-    "proposed_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV and XLSX format. To export large datasets, use the bulk export option, which supports up to 10,000 rows. Bulk exports are processed asynchronously — you will receive an email when your file is ready to download.",
-    "change_rationale": "The enhancement adds XLSX as an export format and introduces bulk export for large datasets. Both additions need to be reflected in this page.",
-    "confidence": 0.93
-  }
+  "severity": "high",
+  "change_type": "update",
+  "current_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV format.",
+  "proposed_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV and XLSX format. To export large datasets, use the bulk export option, which supports up to 10,000 rows. Bulk exports are processed asynchronously — you will receive an email when your file is ready to download.",
+  "change_rationale": "The enhancement adds XLSX as an export format and introduces bulk export for large datasets. Both additions need to be reflected in this page.",
+  "confidence": 0.93,
+  "dependencies": []
 }
 ```
 

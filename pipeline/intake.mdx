@@ -1,7 +1,7 @@
 ---
-title: 'Intake Agent: Deterministic Change Classification'
+title: 'Intake Agent: Deterministic Change Event Classification'
 sidebarTitle: 'Intake'
-description: 'The Intake agent classifies every change event using eight rule-based detectors — zero LLM, fully auditable routing that determines which downstream agents fire.'
+description: 'Classifies every change event using eight rule-based detectors — zero LLM, fully auditable routing that determines which downstream agents fire.'
 ---
 
 The Intake agent is the classification layer of the pipeline. Every product change event passes through it before any downstream work begins. The agent runs eight independent, rule-based detectors against the incoming event payload and assembles their outputs into a routing manifest — the structured document that tells the Orchestrator exactly which agents this run requires.

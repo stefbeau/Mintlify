@@ -1,7 +1,7 @@
 ---
 title: 'A2A Orchestration: Coordinating Multi-Agent Pipelines'
 sidebarTitle: 'A2A Orchestration'
-description: 'Agent-to-agent orchestration through a central coordinator — how the pipeline manages handoffs, confidence gating, and execution planning without direct agent-to-agent communication.'
+description: 'Orchestrate multi-agent pipelines through a central coordinator — controls all handoffs, confidence gating, and execution plans with full traceability.'
 ---
 
 A2A orchestration is a coordination pattern where a central orchestrator manages all inter-agent communication, context passing, and execution sequencing. Agents do not interact directly with each other. Every piece of context that flows between agents is constructed, packaged, and dispatched by the orchestrator — agents receive purpose-built input packages and return structured outputs back to the orchestrator, which then decides what fires next.
@@ -36,6 +36,32 @@ Before dispatching each agent, the orchestrator extracts and structures exactly 
 - `approved_content_summary` — from the post-gate approval event
 
 Each agent receives a small, focused package built for its specific task. This keeps token consumption flat across pipeline stages. An agent that receives only what it needs is cheaper, more focused, and produces more predictable output than one that receives the full accumulated pipeline state.
+
+## Confidence gating
+
+The orchestrator evaluates the confidence score on each agent output before dispatching the next agent. Low-confidence outputs escalate to human review rather than proceeding automatically:
+
+```
+Agent 02 output received
+      │
+      ├── confidence ≥ threshold    → construct Agent 03 handoff, dispatch
+      ├── confidence near threshold → dispatch, flag for closer review at gate
+      └── confidence < threshold   → escalate to human review, pause pipeline
+```
+
+Centralising confidence gating at the orchestrator creates a single, consistent escalation policy. Thresholds are configured in one place and applied uniformly across all stage transitions. An individual agent never decides whether its own output is good enough to proceed — that judgment belongs to the orchestrator.
+
+## Error handling
+
+The orchestrator handles agent failures without collapsing the full pipeline run:
+
+| Failure type | Orchestrator behaviour |
+|---|---|
+| **Transient** (timeout, network) | Retry with exponential backoff; log each attempt |
+| **Non-retriable** (malformed output, schema violation) | Escalate to human review; log with full context |
+| **Partial** (one agent fails, others succeed) | Surface at approval gate; writer decides whether to proceed |
+
+No failure is silent. Every error produces a log entry and a human-visible signal at the approval gate or escalation interface.
 
 ## Minimal execution plans
 

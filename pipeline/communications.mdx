@@ -1,7 +1,7 @@
 ---
 title: 'Communications Agent: Drafting Client Announcements'
 sidebarTitle: 'Communications'
-description: 'The Communications agent drafts the client-facing announcement that accompanies each documentation update, applying voice, tone, and terminology standards automatically.'
+description: 'Drafts client-facing announcements for documentation updates — template selection, voice normalisation, and terminology standards applied automatically.'
 ---
 
 The Communications agent runs alongside the Content Prep stage to draft the client-facing announcement that accompanies the documentation update. When your change event requires a notification — as determined by the `notify_trigger` classification in the routing manifest — the Communications agent produces a complete draft that is ready for your review at the approval gate.
@@ -35,6 +35,10 @@ After the initial draft is produced, a second bounded sub-agent applies a voice 
 - Adjusts sentence length and complexity to match the audience classification
 
 The normalisation pass makes corrections, not rewrites. The structure and content of the draft are preserved; only specific rule violations are addressed.
+
+## Output packaging
+
+After voice normalisation, a final deterministic step constructs the output envelope that is handed off to the approval gate. This step assembles the template identifier used, the audience classification, and the finalised draft into a structured package. Because the envelope structure is fully determined by the inputs, this step is handled without LLM involvement — keeping the handoff fast and consistent.
 
 ## What the agent does NOT do
 

@@ -1,7 +1,7 @@
 ---
-title: 'Deterministic Triage: Auditable Pipeline Routing'
+title: 'Deterministic Triage: Auditable, Rule-Based Routing'
 sidebarTitle: 'Deterministic Triage'
-description: 'Route pipeline events using rule-based detectors that produce typed classification signals — fully auditable, unit-testable, and free of LLM non-determinism.'
+description: 'Use rule-based detectors to classify and route pipeline events before any LLM fires — every decision is deterministic, auditable, and unit-testable.'
 ---
 
 Deterministic triage is a routing pattern where every classification decision is made by rule-based code before any LLM agent fires. Instead of passing a raw event to an agent and asking it to decide what the pipeline should do next, you run a set of typed detectors against the structured input and produce a routing manifest. The orchestrator reads that manifest and builds an execution plan. Zero LLM, zero non-determinism — and every routing decision is a deterministic function of the input.

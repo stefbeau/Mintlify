@@ -1,7 +1,7 @@
 ---
-title: 'Governance: Audit Logs and Pipeline Health'
+title: 'Governance: Audit Logs, Metrics, and Pipeline Health'
 sidebarTitle: 'Governance'
-description: 'Every pipeline run produces a structured audit log, corpus change record, and health metrics — giving you full traceability from product change event to published documentation.'
+description: 'Produces a structured audit log, corpus change record, and health metrics for every run — full traceability from change event to published documentation.'
 ---
 
 The Governance agent runs at the end of every pipeline run to assemble the complete record of what happened. It collects structured outputs from every upstream stage, constructs the run log, writes the corpus change record, publishes health metrics to your pipeline dashboard, and flags any anomalies for your attention.
@@ -17,6 +17,7 @@ At the end of every run, the Governance agent assembles a complete structured ru
   "run_id": "...",
   "timestamp": "...",
   "change_event_id": "...",
+  "routing_manifest": { "..." },
   "agents_dispatched": ["01", "02", "03", "04", "05"],
   "impact_summary": {
     "pages_affected": 4,

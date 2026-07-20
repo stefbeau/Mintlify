@@ -1,7 +1,7 @@
 ---
-title: 'Audit Trail: Full Traceability for Every Change'
+title: 'Audit Trail: Complete Traceability for Every Pipeline Change'
 sidebarTitle: 'Audit Trail'
-description: 'Every pipeline run produces a structured audit trail — from the incoming change event through routing decisions, approval actions, quality findings, and the corpus change record.'
+description: 'Every pipeline run produces a permanent audit trail: change events, routing decisions, approvals, quality findings, and the append-only corpus record.'
 ---
 
 Every change to your knowledge base through the pipeline is fully traceable — from the product change event that triggered it, through every agent decision, to the approval action that cleared it. Nothing enters your corpus without a complete, permanent record of how it got there.
@@ -54,43 +54,33 @@ The response returns the complete audit trail for the run:
 ```json
 {
   "run_id": "run_20240912_a3f7c1",
-  "triggered_at": "2024-09-12T13:58:42Z",
-  "change_event": {
-    "event_id": "evt_20240912_b1d4e9",
-    "payload_hash": "sha256:c4ca4238a0b9...",
-    "received_at": "2024-09-12T13:58:40Z"
-  },
-  "routing": {
+  "timestamp": "2024-09-12T13:58:42Z",
+  "change_event_id": "evt_20240912_b1d4e9",
+  "routing_manifest": {
     "detectors_fired": ["feature_change", "api_surface"],
     "detectors_clear": ["deprecation", "pricing", "security", "compliance", "breaking_change", "removal"],
     "detector_version": "1.4.2"
   },
-  "impact_analysis": {
-    "pages_flagged": 3,
-    "pages_dismissed": 1,
+  "agents_dispatched": ["01", "02", "03", "04", "05"],
+  "impact_summary": {
+    "pages_affected": 3,
     "severity_breakdown": { "critical": 1, "high": 1, "low": 1 }
   },
-  "approval": {
-    "content_diff_approved_by": "writer@example.com",
-    "content_diff_approved_at": "2024-09-12T14:23:07Z",
-    "content_diff_edited": true,
-    "comms_draft_approved_by": "writer@example.com",
-    "comms_draft_approved_at": "2024-09-12T14:25:31Z",
-    "comms_draft_edited": false
+  "approval_event": {
+    "approver": "writer@example.com",
+    "timestamp": "2024-09-12T14:23:07Z",
+    "components_approved": 2,
+    "components_edited": 1,
+    "components_rejected": 0
   },
-  "quality_review": {
-    "findings_total": 4,
-    "findings_overridden": 1,
-    "rule_corpus_version": "2.1.0"
+  "quality_summary": {
+    "findings_critical": 0,
+    "findings_warning": 3,
+    "findings_info": 1
   },
-  "corpus_changes": [
-    {
-      "page_id": "docs/api/authentication",
-      "change_type": "update",
-      "content_hash_before": "sha256:e3b0c44298fc...",
-      "content_hash_after": "sha256:a87ff679a2f3..."
-    }
-  ]
+  "token_consumption": 34800,
+  "pipeline_duration_seconds": 47,
+  "anomalies": []
 }
 ```
 
