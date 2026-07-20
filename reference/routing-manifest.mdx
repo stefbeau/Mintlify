@@ -1,0 +1,80 @@
+---
+title: 'Routing Manifest Schema Reference'
+sidebarTitle: 'Routing Manifest'
+description: 'Full schema reference for the routing manifest produced by the Intake agent — eight classification fields that determine which pipeline stages fire for each run.'
+---
+
+The routing manifest is the output of the Intake agent's deterministic triage layer. It classifies the incoming change event across eight dimensions and determines which downstream agents the Orchestrator dispatches. Every classification decision in the manifest is produced by a rule-based detector — no LLM is involved — making the manifest fully deterministic and auditable.
+
+## Schema
+
+```json
+{
+  "change_type": "enhancement",
+  "scope": "single",
+  "audience": "client",
+  "urgency": "routine",
+  "notify_trigger": "required",
+  "content_trigger": "required",
+  "review_trigger": "required",
+  "escalation_trigger": "proceed",
+  "confidence": 0.94,
+  "detector_version": "2.1.0"
+}
+```
+
+## Field reference
+
+<ParamField body="change_type" type="string" required>
+  Classification of the change nature. One of: `new_feature`, `enhancement`, `deprecation`, `fix`.
+</ParamField>
+
+<ParamField body="scope" type="string" required>
+  Breadth of the change impact. One of: `single`, `cross_product`, `platform`.
+</ParamField>
+
+<ParamField body="audience" type="string" required>
+  Who is affected by the change. One of: `internal`, `client`, `developer`.
+</ParamField>
+
+<ParamField body="urgency" type="string" required>
+  Processing priority. One of: `routine`, `expedited`, `emergency`.
+</ParamField>
+
+<ParamField body="notify_trigger" type="string" required>
+  Whether a communications message is required. One of: `required`, `not_required`, `uncertain`.
+</ParamField>
+
+<ParamField body="content_trigger" type="string" required>
+  Whether a documentation update is required. One of: `required`, `not_required`, `uncertain`.
+</ParamField>
+
+<ParamField body="review_trigger" type="string" required>
+  Whether quality review is required. One of: `required`, `not_required`.
+</ParamField>
+
+<ParamField body="escalation_trigger" type="string" required>
+  Whether human review is required before proceeding. One of: `escalate`, `proceed`.
+</ParamField>
+
+<ParamField body="confidence" type="number" required>
+  Aggregate confidence score across all detector outputs. Range: `0.0`–`1.0`.
+</ParamField>
+
+<ParamField body="detector_version" type="string" required>
+  Version of the detector set that produced this manifest. Used for audit traceability.
+</ParamField>
+
+## How the manifest drives execution
+
+The Orchestrator reads the manifest immediately after the Intake agent completes and uses it to build the minimal execution plan for the run — dispatching only the agents that the manifest indicates are needed.
+
+**Full run** — when `notify_trigger`, `content_trigger`, and `review_trigger` are all `required`, the Orchestrator dispatches the full agent sequence: Impact Analysis, Content Prep, the approval gate, Quality Review, and Governance. This is the path for a significant product change that requires documentation updates, stakeholder communications, and quality review before publication.
+
+**Comms-only run** — when `content_trigger` is `not_required` but `notify_trigger` is `required`, the Orchestrator skips the Impact Analysis and Content Prep agents entirely and dispatches only the Notify agent and Governance. No documentation changes are proposed or reviewed. This keeps the pipeline lean for change events that require communications but leave the corpus unaffected.
+
+The manifest also controls cost: agents that are not needed for a given run are never invoked, which keeps token consumption proportional to the actual scope of each change event.
+
+<Note>
+  When `escalation_trigger` is `escalate` or any trigger is `uncertain`, the Orchestrator surfaces the run for your review before dispatching downstream agents.
+</Note>

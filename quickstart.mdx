@@ -1,47 +1,142 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: 'Get Started with the Agentic Docs Pipeline'
+sidebarTitle: 'Quickstart'
+description: 'Send your first product change event through the pipeline and review a documentation proposal in five steps.'
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+This guide walks you through your first end-to-end pipeline run. By the end, you will have submitted a product change event, watched all seven agents process it, reviewed a documentation proposal at the approval gate, and seen a complete audit log for the run.
 
 ## Prerequisites
 
-Before you begin, you must have:
+Before you start, make sure you have the following in place:
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+- Access to a running instance of the Agentic Docs Pipeline
+- A documentation corpus connected to the pipeline's vector index
+- A valid API key with `events:write` and `runs:read` permissions
 
-## Get started
+## Step-by-step walkthrough
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Prepare your change event">
+    A change event is a structured JSON document that describes what changed in your product. It is the pipeline's input — everything that follows is derived from this payload.
+
+    ```json change-event.json
+    {
+      "change_id": "chg-2026-0042",
+      "change_type": "enhancement",
+      "scope": "single",
+      "audience": "client",
+      "urgency": "routine",
+      "summary": "Added bulk export option to the reporting dashboard",
+      "detail": "Users can now export up to 10,000 rows from any report view as CSV or XLSX. The export button appears in the top-right toolbar of every report. Exports are processed asynchronously and delivered by email when ready."
+    }
+    ```
+
+    The `change_type`, `scope`, `audience`, and `urgency` fields drive the Intake agent's deterministic classification. The `summary` and `detail` fields are used by the Impact Analysis and Content Prep agents to identify and draft updates.
+  </Step>
+
+  <Step title="Submit the event">
+    POST your change event to the pipeline's events endpoint.
 
     ```bash
-    npm install your-package
+    curl -X POST https://your-pipeline-host/events \
+      -H 'Content-Type: application/json' \
+      -H 'Authorization: Bearer YOUR_API_KEY' \
+      -d @change-event.json
+    ```
+
+    The pipeline immediately acknowledges the event and begins dispatching agents. You will receive a `run_id` to track progress.
+
+    ```json
+    {
+      "run_id": "run-8f3a2c1d",
+      "status": "processing",
+      "agents_dispatched": ["orchestrator", "intake", "impact-analysis"],
+      "estimated_completion": "2026-03-15T14:32:00Z"
+    }
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+
+  <Step title="Watch the pipeline run">
+    Poll the run status endpoint using the `run_id` returned in the previous step. The response shows you which stage is currently active, the outputs produced so far, and the confidence score for the run.
 
     ```bash
-    your-cli init
+    GET /runs/run-8f3a2c1d
     ```
+
+    ```json
+    {
+      "run_id": "run-8f3a2c1d",
+      "status": "awaiting_approval",
+      "current_stage": "human-approval-gate",
+      "stages_completed": ["orchestrator", "intake", "impact-analysis", "content-prep", "communications"],
+      "pages_affected": 4,
+      "confidence": 0.91,
+      "flagged_for_review": false
+    }
+    ```
+
+    When `status` becomes `awaiting_approval`, the pipeline has paused at the human approval gate and is ready for your review.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
+  <Step title="Review proposals at the approval gate">
+    Navigate to the approval interface for your run. The pipeline presents three components for your review:
+
+    **Impact manifest** — the list of pages the pipeline identified as affected, each with a severity score (`critical`, `high`, `medium`, or `low`) and the rationale for why it was flagged.
+
+    **Content diff** — for each affected page, a structured diff showing the current content, the proposed replacement, the change rationale, and the agent's confidence score for that suggestion. Low-confidence proposals are highlighted so you know where to focus your attention.
+
+    **Communications draft** — the client-facing announcement the Communications agent drafted, with your voice, tone, and terminology standards already applied.
+
+    For each component, you can take one of four actions:
+    - **Approve** — accept the proposal as-is
+    - **Edit** — modify the proposal and approve your revised version
+    - **Reject** — send the component back with a written reason
+    - **Escalate** — flag the full run for senior review before proceeding
+
+    Components are independent. You can approve the content diff and reject the communications draft in the same review session — only the rejected component is sent back through its agent.
+  </Step>
+
+  <Step title="Pipeline completes">
+    Once every component has an explicit decision, the pipeline resumes. The Quality Review agent evaluates your approved content against 77 rules across prose, style, and terminology. The Governance agent then logs the complete run.
+
+    ```json
+    {
+      "run_id": "run-8f3a2c1d",
+      "status": "complete",
+      "change_id": "chg-2026-0042",
+      "pages_updated": 4,
+      "approval_event": {
+        "reviewer": "j.smith@example.com",
+        "approved_at": "2026-03-15T14:47:22Z",
+        "edits_made": 1,
+        "components_approved": 3,
+        "components_rejected": 0
+      },
+      "quality_review": {
+        "rules_evaluated": 77,
+        "findings": 2,
+        "severity": "low"
+      },
+      "audit_log_url": "/runs/run-8f3a2c1d/audit"
+    }
     ```
+
+    Your knowledge base now reflects the product change. The full run — from the original change event through to the approval decision and quality findings — is recorded in the audit log.
   </Step>
 </Steps>
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+  The approval gate is mandatory. Nothing reaches your knowledge base without explicit human sign-off. There is no bulk-approve flow and no way to schedule autonomous publishing.
 </Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Pipeline Overview" icon="diagram-project" href="/pipeline/overview">
+    Explore each of the seven stages in detail and the data structures that flow between them.
+  </Card>
+  <Card title="Core Concepts" icon="book-open" href="/core-concepts">
+    Understand change events, routing manifests, impact manifests, DIFF packages, and confidence scores.
+  </Card>
+</CardGroup>

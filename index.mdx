@@ -1,20 +1,48 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: 'Agentic Docs Pipeline: Automate Your Documentation Lifecycle'
+sidebarTitle: 'Home'
+description: 'Keep your knowledge base accurate at scale with a seven-agent pipeline that detects product changes, drafts updates, and routes every proposal through human review.'
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+The Agentic Docs Pipeline automates the documentation lifecycle — from product change event to approved, published update — so your knowledge base stays accurate at the speed your product moves. It exists to solve documentation drift: the silent accumulation of stale, contradictory, and incomplete content that degrades every AI-powered feature that retrieves from your corpus.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Introduction" icon="book-open" href="/introduction">
+    Learn what the pipeline is, the problem it solves, and the design principles behind it.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Send your first change event, watch the agents run, and review a proposal at the approval gate.
+  </Card>
+  <Card title="Pipeline Overview" icon="diagram-project" href="/pipeline/overview">
+    Explore all seven stages — from Orchestrator to Governance — and what each agent produces.
+  </Card>
+  <Card title="The Approval Gate" icon="hand" href="/approval/human-in-the-loop">
+    Understand the mandatory human checkpoint that sits between drafting and production.
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## How the pipeline works
+
+<Steps>
+  <Step title="A product change event enters the pipeline">
+    You submit a structured change event — a JSON document describing what changed, its scope, audience, and urgency. The Orchestrator validates the payload and routes it into the pipeline. Low-confidence signals escalate to human review immediately, before any downstream agent fires.
+  </Step>
+  <Step title="Agents classify, analyse, and draft">
+    The Intake agent deterministically classifies the change across eight dimensions with zero LLM involvement. Impact Analysis then runs a semantic search across your corpus to identify which pages are affected and scores each by severity. Content Prep drafts targeted updates as structured DIFF packages — current content, proposed content, rationale, and a confidence score for every suggestion.
+  </Step>
+  <Step title="You review and approve at the gate">
+    The pipeline pauses. You see the impact manifest, the content diff, and the communications draft side by side. You can approve, edit, or reject each component independently. Nothing moves forward without your explicit sign-off.
+  </Step>
+  <Step title="Quality review and governance complete the run">
+    After your approval, the Quality Review agent evaluates the content against 77 rules covering prose, style, and terminology. Governance logs every routing decision, approval event, and quality finding to a structured audit trail traceable back to the original change event.
+  </Step>
+</Steps>
+
+<CardGroup cols={2}>
+  <Card title="Design Patterns" icon="layer-group" href="/patterns/pattern-c">
+    Explore Pattern C — the deterministic-first architecture that powers the pipeline's intake layer.
+  </Card>
+  <Card title="Reference" icon="code" href="/reference/routing-manifest">
+    Browse the routing manifest schema and other structured data references.
+  </Card>
+</CardGroup>

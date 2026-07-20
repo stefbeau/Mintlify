@@ -1,0 +1,91 @@
+{
+  "projectType": "ai-ml",
+  "projectName": "Agentic Docs Pipeline",
+  "projectDescription": "A seven-agent orchestration pipeline that automates the documentation lifecycle — from product change events through impact analysis, content drafting, human approval, quality review, and governance reporting.",
+  "theme": "luma",
+  "primaryColor": "#4F6AF5",
+  "lightColor": "#EEF1FE",
+  "darkColor": "#1E2A6E",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "core-concepts"
+            ]
+          },
+          {
+            "group": "How It Works",
+            "pages": [
+              "pipeline/overview",
+              "pipeline/orchestrator",
+              "pipeline/intake",
+              "pipeline/impact-analysis",
+              "pipeline/content-prep",
+              "pipeline/communications",
+              "pipeline/quality-review",
+              "pipeline/governance"
+            ]
+          },
+          {
+            "group": "The Approval Gate",
+            "pages": [
+              "approval/human-in-the-loop",
+              "approval/reviewing-proposals",
+              "approval/audit-trail"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Design Patterns",
+        "groups": [
+          {
+            "group": "Patterns",
+            "pages": [
+              "patterns/pattern-c",
+              "patterns/deterministic-triage",
+              "patterns/a2a-orchestration",
+              "patterns/mcp-tool-design"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/corpus-quality",
+              "reference/routing-manifest",
+              "reference/diff-package"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Seven-agent orchestration pipeline for documentation lifecycle automation",
+    "Deterministic triage layer with zero LLM — eight rule-based detectors for auditable routing",
+    "Semantic impact analysis using vector search across the documentation corpus",
+    "Structured DIFF package output for human-reviewable content proposals",
+    "Mandatory human approval gate before any content reaches production",
+    "Parallel quality review sub-agents evaluating 77 rules across prose, style, and terminology",
+    "Full governance and audit logging for every pipeline run",
+    "78% token reduction via Skills-type agent architecture"
+  ],
+  "publicApiSurface": [
+    "Change event payload schema",
+    "Routing manifest (8 detectors: detect_change_type, detect_scope, detect_audience, detect_urgency, detect_notify_trigger, detect_content_trigger, detect_review_trigger, detect_escalation_trigger)",
+    "Impact manifest (affected pages with severity scores and change rationale)",
+    "DIFF package (current_content, proposed_content, change_rationale, confidence, dependencies)",
+    "Findings payload (rule_id, category, severity, location, suggested_text, confidence)",
+    "Run log (routing_manifest, agents_dispatched, impact_summary, approval_event, quality_summary, token_consumption)",
+    "MCP tool categories: Retrieval, Write, Search, Metadata, Notification",
+    "FastMCP SSE response format",
+    "Anomaly detection thresholds",
+    "Corpus change record (append-only)"
+  ]
+}

@@ -1,0 +1,54 @@
+---
+title: 'What is the Agentic Docs Pipeline?'
+sidebarTitle: 'Introduction'
+description: 'A seven-agent orchestration pipeline that automates documentation updates when your product changes, keeping your knowledge base accurate for AI-powered features.'
+---
+
+The Agentic Docs Pipeline is a seven-agent orchestration system that closes the feedback loop between product changes and documentation updates. When a product change event enters the pipeline, seven specialised agents handle classification, impact analysis, content drafting, communications, quality review, and audit logging — all with a mandatory human approval gate before anything reaches your knowledge base. The pipeline does not replace your writers; it makes it possible for them to maintain documentation quality at a scale where manual processes have already broken down.
+
+## The problem it solves
+
+At scale, documentation accuracy is not just a user experience concern — it is an AI data quality problem. Most LLM-powered product features retrieve from a knowledge base at query time, inject that retrieved content into the model's context, and generate a response grounded in whatever they find. If your corpus drifts out of sync with the product, those responses become confidently wrong. The model cannot tell that the page it retrieved was last updated eighteen months ago.
+
+Drift accumulates from every product change that ships without a corresponding documentation update, every partial update that misses related pages, and every deprecated page that stays in the index and keeps surfacing in retrieval. In a knowledge base of tens of thousands of pages, manual review cycles cannot keep pace.
+
+<Note>
+  When your knowledge base drifts out of sync with the product, every AI feature that retrieves from it gets worse.
+</Note>
+
+## Seven agents, one pipeline
+
+Each pipeline run moves a change event through seven sequential stages. Every agent has exactly one responsibility — which makes the pipeline testable, debuggable, and replaceable one stage at a time.
+
+1. **Orchestrator** — Validates the incoming change event, routes it into the pipeline, and confidence-gates the run. Low-confidence signals escalate to human review before any downstream agent fires.
+2. **Intake Agent** — Classifies the change across eight dimensions using deterministic, rule-based detectors. Zero LLM — every routing decision is fully auditable.
+3. **Impact Analysis Agent** — Runs a semantic search across your corpus to identify which pages are affected by the change, scores each by severity, and produces a ranked impact manifest.
+4. **Content Prep Agent** — Drafts documentation updates for every affected page as structured DIFF packages, showing current content, proposed content, change rationale, and a confidence score.
+5. **Communications Agent** — Drafts the client-facing announcement that accompanies the documentation update, applying your voice, tone, and terminology standards.
+6. **Quality Review Agent** — After your approval, evaluates the approved content against 77 rules covering prose clarity, style, and terminology consistency.
+7. **Governance Agent** — Logs every routing decision, approval event, and quality finding to a structured audit trail. Every run is traceable back to the originating change event.
+
+## What makes it different
+
+<CardGroup cols={3}>
+  <Card title="Deterministic-First" icon="shield-check">
+    The routing layer uses zero LLM — eight rule-based detectors make every triage decision. The intake layer is fully auditable, fast, and produces no hallucinated routing. LLM cost and latency are reserved for tasks that genuinely require judgment.
+  </Card>
+  <Card title="Human-Owned Decisions" icon="hand">
+    Every proposal passes through a mandatory human approval gate before it can reach production. You approve, edit, or reject each component independently. The gate is enforced at the architecture level — it cannot be bypassed or overridden.
+  </Card>
+  <Card title="Audit-First" icon="file-lines">
+    Every pipeline run produces a structured audit log capturing routing decisions, impact scores, confidence scores, approval events, and quality findings. Every published update is traceable to the change event that triggered it.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Send your first change event and review a proposal in five steps.
+  </Card>
+  <Card title="Pipeline Overview" icon="diagram-project" href="/pipeline/overview">
+    Explore all seven stages and the data structures that flow between them.
+  </Card>
+</CardGroup>

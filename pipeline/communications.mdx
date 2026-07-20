@@ -1,0 +1,49 @@
+---
+title: 'Communications Agent: Drafting Client Announcements'
+sidebarTitle: 'Communications'
+description: 'The Communications agent drafts the client-facing announcement that accompanies each documentation update, applying voice, tone, and terminology standards automatically.'
+---
+
+The Communications agent runs alongside the Content Prep stage to draft the client-facing announcement that accompanies the documentation update. When your change event requires a notification — as determined by the `notify_trigger` classification in the routing manifest — the Communications agent produces a complete draft that is ready for your review at the approval gate.
+
+## What it produces
+
+The Communications agent produces a structured draft with four components:
+
+| Component | Description |
+|-----------|-------------|
+| **Subject line** | Action-oriented and audience-appropriate |
+| **Opening sentence** | States what is changing and when |
+| **Body** | What users need to know about the change |
+| **Call to action** | What users should do next, if applicable |
+
+The draft is a complete, usable starting point — not a skeleton or a set of options. You review it as a whole at the approval gate and can approve it as drafted, edit it, or reject it.
+
+## Template selection
+
+The appropriate communications template is selected automatically based on the `change_type` and `audience` classifications in the routing manifest. A new feature announcement for client-facing users uses a different template structure than a deprecation notice for developers.
+
+Template selection happens in a deterministic pre-processing step before the drafting agent fires. This means the LLM receives a clean, structured context object — not the raw change event payload — which produces more consistent output.
+
+## Voice and tone
+
+After the initial draft is produced, a second bounded sub-agent applies a voice normalisation pass. This pass makes targeted corrections against your voice and tone standard:
+
+- Converts passive voice constructions to active voice
+- Substitutes approved terminology where unapproved terms appear
+- Ensures register consistency throughout the message — no mixing of formal and informal within a single draft
+- Adjusts sentence length and complexity to match the audience classification
+
+The normalisation pass makes corrections, not rewrites. The structure and content of the draft are preserved; only specific rule violations are addressed.
+
+## What the agent does NOT do
+
+<Note>
+The Communications agent drafts messages. It does not send them. Email dispatch happens outside the pipeline, after you have reviewed and approved the draft at the approval gate. The agent has no access to email sending tooling — this is an architectural guarantee, not a setting that can be changed.
+</Note>
+
+## Reviewing the communications draft
+
+At the approval gate, the communications draft is presented alongside the DIFF packages from the Content Prep stage. You review the subject line, body, and call to action, and make an approve, edit, or reject decision. Your decision is logged as part of the run record.
+
+For more detail on the review experience, see [Reviewing Proposals](/approval/reviewing-proposals).

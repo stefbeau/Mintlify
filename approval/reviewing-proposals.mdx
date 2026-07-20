@@ -1,0 +1,80 @@
+---
+title: 'Reviewing Proposals at the Approval Gate'
+sidebarTitle: 'Reviewing Proposals'
+description: 'A step-by-step guide to reviewing the impact manifest, content DIFF packages, and communications draft at the Agentic Docs Pipeline approval gate.'
+---
+
+This page covers how to efficiently review the three components at the approval gate and make approve, edit, or reject decisions on each one. By the time a run reaches the gate, the agents have completed retrieval, cross-referencing, and drafting — your job is to evaluate the proposals and decide what ships.
+
+## Step 1: Review the impact manifest
+
+The impact manifest is your first view of a run. It lists every page the pipeline flagged as affected by the incoming change event, along with a severity score and a change rationale for each.
+
+Start with critical-severity pages. These are the pages the agent assessed as most directly affected by the product change — errors here have the highest downstream impact, so they deserve close attention before you look at anything else.
+
+For low-severity flags, check the rationale. If you believe a flag is a false positive — the page is not genuinely affected by this change — you can dismiss it. Dismissals are logged with your identity and reason, so the decision is traceable if the page's relevance is revisited later.
+
+## Step 2: Review content DIFF packages
+
+Each affected page in the manifest has a corresponding DIFF package. The interface shows:
+
+- **Current content** on the left — the live version of the page as it exists in the corpus right now
+- **Proposed content** on the right — the agent's draft update
+- **Change rationale** below the diff — the agent's explanation of why this change is needed and how it connects to the product change event
+- **Confidence score** highlighted above the diff — the agent's self-assessed certainty in the proposal
+
+Use confidence scores to triage your review load:
+
+| Signal | Guidance |
+|---|---|
+| High confidence + critical severity | Quick review recommended — the agent is certain and the page is high-impact. Scan the diff and rationale. |
+| Low confidence on any page | Read carefully. A low confidence score means the agent was uncertain about the proposal. These warrant your closest attention regardless of severity. |
+
+<Accordion title="What counts as a low-confidence proposal?">
+  Confidence scores are expressed as a decimal between 0 and 1. The pipeline surfaces proposals below **0.75** with a visual indicator at the approval interface.
+
+  A low score does not mean the proposal is wrong — it means the agent had less certainty when producing it. Common causes include:
+  - Ambiguous overlap between the change event and the page's existing scope
+  - Pages with mixed or unusual content structures
+  - Change events that affect multiple pages in ways that interact with each other
+
+  When you see a low-confidence score, read the change rationale carefully and compare the proposed content against the current content line by line. If the proposal looks correct on review, you can approve it — the score reflects agent uncertainty, not a block on approval.
+</Accordion>
+
+## Step 3: Review the communications draft
+
+The Notify agent produces a structured communications draft with four parts:
+
+- **Subject line** — action-oriented and written for the target audience
+- **Opening sentence** — what is changing and when
+- **Body** — what users need to know about the change
+- **Call to action** — what users should do next, if the change requires action on their part
+
+When reviewing the draft, check that the voice and tone are consistent with your established communications style, that product terminology matches your approved terms, and that the level of technical detail is appropriate for the audience. You can edit directly in the interface — the draft is a starting point, not a locked output.
+
+## Making your decisions
+
+<Steps>
+  <Step title="Approve components you are satisfied with">
+    Click **Approve** on any component you accept as-is. The component is marked approved and logged with your identity and a timestamp. Approved components proceed in the pipeline immediately.
+  </Step>
+  <Step title="Edit then approve where needed">
+    Make edits inline for any component that needs changes before it can be approved. Once you have made your edits, click **Approve**. The governance log records both the original agent output and your edited version — the diff between them is permanently traceable.
+  </Step>
+  <Step title="Reject with a reason">
+    Click **Reject** and provide a reason for any component you cannot approve. The rejected component is sent back through the relevant agent with your reason attached. The rest of the run is unaffected. Your reason is logged and contributes to pipeline performance tracking.
+  </Step>
+  <Step title="Escalate if needed">
+    Click **Escalate** to flag the full run for senior review. The pipeline pauses — no components proceed until the escalation is resolved. Use escalation when a run surfaces something that requires a second opinion before any decision is made.
+  </Step>
+</Steps>
+
+<Tip>
+  Every edit you make at the approval gate is logged — rejection reasons feed back into pipeline improvement tracking. Clear, specific reasons help you tune the pipeline over time. Instead of 'incorrect', write 'proposed content contradicts current behaviour of the retry configuration — the agent retrieved an outdated API reference.' That level of detail gives your pipeline maintainer something actionable to work with.
+</Tip>
+
+## After approval
+
+Once all gate components have an explicit decision — approved, edited-and-approved, or sent back for a re-run — the Quality Review agent runs automatically on the approved content. It evaluates the approved documentation against a 77-rule corpus covering prose, style, and terminology, and produces a structured findings payload before the content enters the live knowledge base.
+
+After Quality Review, the Governance agent logs the completed run, records the corpus change, and closes the audit trail for this pipeline run.

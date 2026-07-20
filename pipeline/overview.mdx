@@ -1,0 +1,113 @@
+---
+title: 'Pipeline Overview: Seven Stages, One Lifecycle'
+sidebarTitle: 'Overview'
+description: 'Explore how the seven-stage pipeline moves a product change event through classification, impact analysis, drafting, human review, quality check, and governance.'
+---
+
+When a product change ships, the pipeline takes a structured change event and carries it through seven stages — classifying the change, finding every documentation page it affects, drafting updates, preparing a client announcement, pausing for your review and approval, evaluating the approved content against quality rules, and writing a complete audit record. Nothing reaches your knowledge base until you have explicitly approved it.
+
+## Pipeline stages
+
+1. **Orchestrator** — Validates the incoming change event payload, interprets the routing manifest, and builds the minimal execution plan for the run. Every agent dispatch flows through the Orchestrator.
+2. **Intake** — Classifies the change event using eight deterministic, rule-based detectors. Produces a routing manifest that tells the Orchestrator which downstream agents to fire. Zero LLM — fully auditable.
+3. **Impact Analysis** — Runs semantic vector search across your documentation corpus to find every page affected by the change. Scores each page by severity and produces a ranked impact manifest.
+4. **Content Prep** — Drafts documentation updates for each affected page as structured DIFF packages — showing current content, proposed content, rationale, and confidence score, ready for your review.
+5. **Communications** — Drafts the client-facing announcement that accompanies the documentation update, applying voice, tone, and terminology standards automatically.
+6. **Quality Review** — After your approval, evaluates the approved content against 77 rules across prose, style, and terminology categories. Surfaces findings before anything enters the knowledge base.
+7. **Governance** — Assembles the complete run log, writes the corpus change record, publishes health metrics, and flags any anomalies for your attention.
+
+## Stage flow
+
+```
+Product Change Event
+        │
+        ▼
+┌─────────────────┐
+│  Orchestrator   │  Validates payload, builds execution plan
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Intake         │  Classifies change — zero LLM, 8 detectors
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Impact         │  Finds affected pages via semantic search
+│  Analysis       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Content Prep   │  Drafts DIFF packages for each affected page
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Communications │  Drafts the client announcement
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────┐
+│  ✋ HUMAN APPROVAL GATE         │
+│  You review and approve before  │
+│  anything proceeds              │
+└────────┬────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Quality Review │  Evaluates approved content against 77 rules
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Governance     │  Audit log, corpus change record, health metrics
+└─────────────────┘
+```
+
+## What the pipeline produces
+
+Every pipeline run produces a set of structured outputs that flow between stages and into your audit record.
+
+| Output | Produced by | Description |
+|--------|-------------|-------------|
+| Routing manifest | Intake | Typed classification signals that determine which agents fire |
+| Impact manifest | Impact Analysis | Ranked list of affected pages with severity scores and rationale |
+| DIFF package | Content Prep | Structured current/proposed/rationale for each affected page |
+| Communications draft | Communications | Subject line, body, and call to action for the client announcement |
+| Quality findings | Quality Review | Rule violations with IDs, severity, location, and remediation suggestions |
+| Run log | Governance | Complete structured record of every decision made during the run |
+| Corpus change record | Governance | Append-only history of every knowledge base change made through the pipeline |
+
+## Execution planning
+
+Not every agent fires on every run. After the Intake agent classifies the change event, the Orchestrator builds a minimal execution plan based on what the routing manifest actually requires.
+
+For example, a product change that requires a client communications message but no documentation update dispatches the Communications agent only — the Impact Analysis and Content Prep agents are skipped entirely. A deprecation notice that affects a single product area with no client-facing announcement dispatches a different subset.
+
+This means the pipeline uses only the compute each run genuinely needs. Simple runs are cheap and fast; only complex runs with broad documentation impact and communications requirements use the full agent chain.
+
+## Token efficiency
+
+The pipeline's Skills-type agent architecture reduces per-run token consumption to approximately 35,500 tokens — down from 165,000 tokens in earlier iterations. That is a 78% reduction without any change in pipeline behaviour.
+
+The key mechanism is bounded context: each agent receives only the information it needs for its specific task, not the full pipeline state. For you, this means lower per-run cost and more predictable pipeline latency as your change volume scales.
+
+<Note>
+The Human Approval Gate between Stage 4 and Stage 5 is mandatory and cannot be bypassed. Nothing proceeds to Quality Review or publication without your explicit approval.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Orchestrator" icon="sitemap" href="/pipeline/orchestrator">
+    Payload validation, routing, confidence gating, and error handling.
+  </Card>
+  <Card title="Intake" icon="filter" href="/pipeline/intake">
+    Eight deterministic detectors that classify every change event — zero LLM.
+  </Card>
+  <Card title="Impact Analysis" icon="magnifying-glass" href="/pipeline/impact-analysis">
+    Semantic search that finds every affected documentation page and scores its severity.
+  </Card>
+  <Card title="Content Prep" icon="pen-to-square" href="/pipeline/content-prep">
+    Structured DIFF packages showing exactly what changes, why, and with what confidence.
+  </Card>
+</CardGroup>

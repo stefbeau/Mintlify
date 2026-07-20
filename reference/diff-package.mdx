@@ -1,0 +1,81 @@
+---
+title: 'DIFF Package Schema Reference'
+sidebarTitle: 'DIFF Package'
+description: 'Full schema reference for the structured DIFF package produced by the Content Prep agent — the primary input to your approval gate review.'
+---
+
+The DIFF package is the structured output from the Content Prep agent. It shows exactly what the pipeline proposes to change in your documentation — current content, proposed content, rationale, confidence score, and any cross-page dependencies — all in a format designed for efficient human review. Each affected page produces one DIFF package, and together they form the complete proposal set you evaluate at the approval gate.
+
+## Schema
+
+```json
+{
+  "page_id": "authentication/api-keys",
+  "severity": "critical",
+  "change_type": "update",
+  "current_content": "API keys are valid for 90 days and must be rotated manually.",
+  "proposed_content": "API keys are valid for 365 days. Automatic rotation is available from the Security settings panel.",
+  "change_rationale": "The key validity period was extended from 90 to 365 days, and automatic rotation was introduced in this release.",
+  "confidence": 0.87,
+  "dependencies": ["security/key-rotation", "quickstart"]
+}
+```
+
+## Field reference
+
+<ResponseField name="page_id" type="string">
+  Identifier of the documentation page being updated.
+</ResponseField>
+
+<ResponseField name="severity" type="string">
+  Severity level from the impact manifest. One of: `critical`, `high`, `medium`, `low`.
+</ResponseField>
+
+<ResponseField name="change_type" type="string">
+  Nature of the proposed change. One of: `update`, `addition`, `removal`.
+</ResponseField>
+
+<ResponseField name="current_content" type="string">
+  The existing content that the proposal targets.
+</ResponseField>
+
+<ResponseField name="proposed_content" type="string">
+  The replacement content proposed by the Content Prep agent.
+</ResponseField>
+
+<ResponseField name="change_rationale" type="string">
+  Agent-generated explanation of why this change is needed, connecting it to the product change event.
+</ResponseField>
+
+<ResponseField name="confidence" type="number">
+  Agent confidence in the proposal. Range `0.0`–`1.0`. Low-confidence proposals are highlighted at the approval gate.
+</ResponseField>
+
+<ResponseField name="dependencies" type="array">
+  Page IDs of other pages with cross-page implications from this change. Empty array if none.
+</ResponseField>
+
+## Reviewing DIFF packages
+
+Use `severity` and `confidence` together to triage your review queue efficiently.
+
+A `critical` or `high` severity proposal with high confidence warrants a quick review: read the rationale, verify it connects clearly to the product change, scan the proposed content, and approve. The pipeline has high certainty this change is correct and necessary.
+
+Any low-confidence proposal — regardless of severity — warrants close scrutiny. Read the current content, the proposed content, and the rationale carefully before deciding. Low confidence means the Content Prep agent encountered ambiguity in scoping or drafting the change, and that ambiguity should be resolved by your judgment, not assumed away.
+
+The structured DIFF format is designed to make this triage fast. Because you see only what changes — not the full page — you can evaluate most proposals in seconds rather than minutes.
+
+## Dependency handling
+
+When a proposed change on one page has implications for other pages in your corpus, the Content Prep agent flags those pages in the `dependencies` array. These flags are informational: you decide what to do with them.
+
+Your two options at the approval gate are:
+
+1. **Address in the current run** — if the dependent pages are straightforward to update and the changes are tightly related, you can open them alongside the current proposal and handle everything together.
+2. **Create a new pipeline run** — if the dependent pages require their own scoping and review, initiate a separate pipeline run targeting those page IDs. This keeps the current run focused and the audit trail clean.
+
+The pipeline does not automatically cascade changes to dependent pages. Automatic cascading would expand the scope of each run unpredictably and make the approval gate harder to reason about. Dependency visibility without automatic resolution gives you control over scope.
+
+<Tip>
+  The `change_rationale` field is your primary review signal. If the rationale does not clearly connect to a real product change, that is a signal the proposal needs closer scrutiny or rejection.
+</Tip>

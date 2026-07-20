@@ -1,0 +1,116 @@
+---
+title: 'Audit Trail: Full Traceability for Every Change'
+sidebarTitle: 'Audit Trail'
+description: 'Every pipeline run produces a structured audit trail — from the incoming change event through routing decisions, approval actions, quality findings, and the corpus change record.'
+---
+
+Every change to your knowledge base through the pipeline is fully traceable — from the product change event that triggered it, through every agent decision, to the approval action that cleared it. Nothing enters your corpus without a complete, permanent record of how it got there.
+
+## What the audit trail captures
+
+Each pipeline run produces a structured audit trail covering the full lifecycle of the change:
+
+- **The incoming change event** — event ID, payload hash, and timestamp. The exact input that triggered the run.
+- **Routing decisions from the Intake agent** — outputs from all 8 detectors, including which detectors fired and which did not, and the detector version used. You can see exactly why the run was routed the way it was.
+- **Impact analysis results** — every page flagged as affected, with severity scores and relevance scores. Pages dismissed at the gate as false positives are logged alongside the reason for dismissal.
+- **Content proposals** — the full DIFF package for each affected page: current content, proposed content, change rationale, and confidence scores as produced by the Content Prep agent.
+- **Approval event** — who approved each component, when they approved it, whether edits were made, and the final approved content. If a component was rejected, the rejection reason is logged here.
+- **Quality review findings** — every rule violation identified by the Quality Review agent, including rule IDs, severity levels, precise location within the content, and whether the finding was overridden by the writer.
+- **Corpus change record** — the page IDs updated, the type of change applied to each, and content hashes both before and after the change. This is the permanent record that ties each knowledge base change to the run that produced it.
+
+## The corpus change record
+
+The corpus change record is the permanent link between a knowledge base change and the pipeline run that produced it. It captures:
+
+```json
+{
+  "run_id": "run_20240912_a3f7c1",
+  "corpus_changes": [
+    {
+      "page_id": "docs/api/authentication",
+      "change_type": "update",
+      "content_hash_before": "sha256:e3b0c44298fc...",
+      "content_hash_after": "sha256:a87ff679a2f3...",
+      "approved_by": "writer@example.com",
+      "approved_at": "2024-09-12T14:23:07Z",
+      "change_event_id": "evt_20240912_b1d4e9"
+    }
+  ]
+}
+```
+
+The corpus change record is append-only. No entry can be edited or deleted after it is written. Every change to your knowledge base is permanently traceable to the change event that triggered it and the approval action that cleared it for publication. If you need to understand why any page is in its current state, the audit trail gives you an unbroken chain back to the source.
+
+## Accessing audit logs
+
+You can query full audit data for any pipeline run via the run log API.
+
+```http
+GET /runs/{run_id}
+```
+
+The response returns the complete audit trail for the run:
+
+```json
+{
+  "run_id": "run_20240912_a3f7c1",
+  "triggered_at": "2024-09-12T13:58:42Z",
+  "change_event": {
+    "event_id": "evt_20240912_b1d4e9",
+    "payload_hash": "sha256:c4ca4238a0b9...",
+    "received_at": "2024-09-12T13:58:40Z"
+  },
+  "routing": {
+    "detectors_fired": ["feature_change", "api_surface"],
+    "detectors_clear": ["deprecation", "pricing", "security", "compliance", "breaking_change", "removal"],
+    "detector_version": "1.4.2"
+  },
+  "impact_analysis": {
+    "pages_flagged": 3,
+    "pages_dismissed": 1,
+    "severity_breakdown": { "critical": 1, "high": 1, "low": 1 }
+  },
+  "approval": {
+    "content_diff_approved_by": "writer@example.com",
+    "content_diff_approved_at": "2024-09-12T14:23:07Z",
+    "content_diff_edited": true,
+    "comms_draft_approved_by": "writer@example.com",
+    "comms_draft_approved_at": "2024-09-12T14:25:31Z",
+    "comms_draft_edited": false
+  },
+  "quality_review": {
+    "findings_total": 4,
+    "findings_overridden": 1,
+    "rule_corpus_version": "2.1.0"
+  },
+  "corpus_changes": [
+    {
+      "page_id": "docs/api/authentication",
+      "change_type": "update",
+      "content_hash_before": "sha256:e3b0c44298fc...",
+      "content_hash_after": "sha256:a87ff679a2f3..."
+    }
+  ]
+}
+```
+
+To list all runs within a time range, use:
+
+```http
+GET /runs?from=2024-09-01T00:00:00Z&to=2024-09-30T23:59:59Z
+```
+
+## Rejection logging
+
+Every rejection you make at the approval gate is logged with the reason you provided. The log entry records:
+
+- The component rejected (content DIFF or communications draft)
+- The run ID and page ID (for content DIFF rejections)
+- Your identity and the timestamp of the rejection
+- The full text of your rejection reason
+
+Rejection reasons accumulate into a feedback corpus that your pipeline maintainer can use to evaluate agent performance over time. Patterns in rejection reasons — recurring issues with specific types of change events, consistent problems with a particular rule or content type — are visible in aggregate and inform prompt and rule updates.
+
+<Note>
+  Audit logs are append-only by design. This is not a convenience feature — it is the property that makes the pipeline's audit trail trustworthy. An audit log that can be edited after the fact is not an audit log.
+</Note>

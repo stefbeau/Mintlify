@@ -1,0 +1,88 @@
+---
+title: 'A2A Orchestration: Coordinating Multi-Agent Pipelines'
+sidebarTitle: 'A2A Orchestration'
+description: 'Agent-to-agent orchestration through a central coordinator — how the pipeline manages handoffs, confidence gating, and execution planning without direct agent-to-agent communication.'
+---
+
+A2A orchestration is a coordination pattern where a central orchestrator manages all inter-agent communication, context passing, and execution sequencing. Agents do not interact directly with each other. Every piece of context that flows between agents is constructed, packaged, and dispatched by the orchestrator — agents receive purpose-built input packages and return structured outputs back to the orchestrator, which then decides what fires next.
+
+This structure is what makes a set of individual agents behave as a coherent, debuggable pipeline rather than an unpredictable mesh.
+
+## The core rule
+
+**Agents do not talk to each other.**
+
+All inter-agent context flows through the orchestrator. When an agent needs output from a previous stage, it receives that output as part of its input package — constructed by the orchestrator from the accumulated run context, not fetched directly from the upstream agent.
+
+Centralising handoffs this way makes the execution plan explicit and fully traceable. When something breaks, you inspect the orchestrator's handoff packages to identify where bad context entered the pipeline. In a mesh of agents communicating directly, that trace is far harder to follow — you have to reconstruct communication paths across multiple agents rather than reading a single, ordered log.
+
+## Purpose-built handoff packages
+
+Before dispatching each agent, the orchestrator extracts and structures exactly what that agent needs — nothing more. Three examples from the pipeline:
+
+**Agent 02 — Impact Analysis** receives:
+- `change_event_summary` — from the orchestrator input
+- `scope_classification` — from the routing manifest
+- `corpus_search_parameters` — derived from scope and change type
+
+**Agent 03 — Content Prep** receives:
+- `impact_manifest` — from Agent 02's output
+- `change_event_detail` — from the orchestrator input
+- `affected_page_ids` — extracted from the impact manifest
+
+**Agent 04 — Communications** receives:
+- `change_event_summary` — from the orchestrator input
+- `audience_classification` — from the routing manifest
+- `approved_content_summary` — from the post-gate approval event
+
+Each agent receives a small, focused package built for its specific task. This keeps token consumption flat across pipeline stages. An agent that receives only what it needs is cheaper, more focused, and produces more predictable output than one that receives the full accumulated pipeline state.
+
+## Minimal execution plans
+
+Not every agent fires on every run. The orchestrator reads the routing manifest produced by the triage layer and constructs the minimal execution plan that satisfies it — dispatching only the agents that have work to do.
+
+For example, a comms-only run where a change event requires a notification but no content updates:
+
+```
+Routing manifest signals:
+  content_trigger:  not_required  → skip agents 02, 03
+  notify_trigger:   required      → include agent 04
+  review_trigger:   not_required  → skip agent 05
+  escalation_trigger: proceed     → continue
+
+Execution plan: [04, 06]
+```
+
+Agent 04 drafts the communication. Agent 06 logs the run. Impact Analysis and Content Prep don't fire — they have nothing to do, and dispatching them would consume tokens and add latency for no output of value.
+
+Minimal execution plans reduce cost per run, reduce latency, and make pipeline behaviour easier to reason about. Use the routing manifest fully.
+
+## Skills-type vs. Graph-type agents
+
+The choice of agent type has significant consequences for orchestration behaviour and cost.
+
+**Graph-type agents** maintain memory across turns. In a multi-turn orchestration flow, they accumulate context from earlier stages — including context that is no longer relevant to the current task. This leads to hallucination on longer runs, unpredictable behaviour that varies with conversation history, and token consumption that grows with every stage.
+
+**Skills-type agents** execute purely from the system prompt and the current input package. No memory accumulation. Each call is stateless — the output depends only on the system prompt and the handoff package the orchestrator provided. This gives you predictable, reproducible behaviour, no context-accumulation hallucination, and dramatically lower token consumption.
+
+The difference is measurable. Re-architecting from Graph-type to Skills-type sub-agents produced a **78% token reduction — from 165,000 to 35,500 tokens per pipeline run — with no degradation in output quality.**
+
+Use Skills-type agents in production pipelines. Reserve Graph-type agents for interactive, conversational use cases where multi-turn memory is genuinely required.
+
+## Pin management
+
+After deploying a new version of a sub-agent prompt, manually re-select that agent's version in the orchestrator configuration. Agent platform "latest" pointers can silently continue referencing a previously pinned version after a new prompt deploys — the orchestrator dispatches the old version with no visible error.
+
+Follow this sequence after any sub-agent prompt update:
+
+1. Deploy the new prompt version
+2. Verify the deployment in the platform
+3. Open the orchestrator configuration
+4. Re-select the updated sub-agent version explicitly
+5. Confirm the orchestrator references the new version before running any tests
+
+This is a platform behaviour, not a design flaw — but it causes silent regressions when not managed deliberately.
+
+<Note>
+Context minimisation is the most impactful optimisation in a multi-agent pipeline. Agents that receive only what they need are cheaper, more focused, and easier to debug.
+</Note>

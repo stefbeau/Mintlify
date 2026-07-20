@@ -1,0 +1,66 @@
+---
+title: 'Human-in-the-Loop: Why You Own Every Decision'
+sidebarTitle: 'Human-in-the-Loop'
+description: 'The Agentic Docs Pipeline is designed around mandatory human review. Learn why the approval gate is load-bearing — and what it means for your documentation quality.'
+---
+
+The pipeline accelerates your work — agents handle retrieval, cross-referencing, and drafting. But every proposal that reaches your knowledge base needs your explicit sign-off. Automation compresses the mechanical work; your judgment is what makes the output trustworthy.
+
+## Why the gate exists
+
+The approval gate solves three distinct problems that autonomous publishing cannot.
+
+**Trust — errors propagate silently without review.** An agentic pipeline that publishes without human oversight has a compounding trust problem. When an agent gets something wrong — and it will — the error ships to your users. Support tickets arrive before anyone on your team has seen the content. The approval gate makes errors visible before they propagate: you see the proposal, recognise the problem, and reject it before it reaches production.
+
+**Accountability — named ownership of every update.** Autonomous publication has no owner. When an agent publishes content without review, responsibility is diffuse — which in practice means it belongs to nobody. The approval gate restores individual ownership. When you approve a proposal, you own it. You can edit it, reject it, or accept it as-is, but you cannot skip the decision. Every published update has a named reviewer.
+
+**AI data quality — the corpus feeds RAG-powered features, and stale content corrupts AI outputs.** For teams whose AI-powered products retrieve from the same knowledge base the pipeline maintains, the stakes are higher than user experience.
+
+<Warning>
+  Organisations running LLM-powered features on top of their knowledge base cannot afford silent documentation drift. A stale corpus produces confidently wrong AI responses.
+</Warning>
+
+Human review at the approval gate is the last checkpoint before content enters the corpus. Every LLM-powered feature that queries your knowledge base inherits whatever is in it — accurate or not. The gate is where you ensure it stays accurate.
+
+## What you review
+
+Three components arrive at the gate for every pipeline run that produces output.
+
+**The impact manifest** — which pages are affected, their severity scores, and the rationale for why each page was flagged. This is your overview of the run's scope before you look at a single line of proposed content.
+
+**The content DIFF package** — for each affected page: the current content, the proposed content, the agent's change rationale, and a confidence score. Content is displayed as a structured diff so you can see exactly what changed — not a full page rewrite you have to compare manually.
+
+**The communications draft** — the client-facing announcement that will accompany the documentation update. Voice, tone, and terminology have already been applied by the Notify agent. You review the final draft before it can be dispatched.
+
+## Your options at the gate
+
+For each of the three components, you have four actions available.
+
+**Approve** — accept the component as-is. The approval is logged with your identity and a timestamp, and the component moves forward in the pipeline.
+
+**Edit then approve** — make changes inline before approving. Your edits are recorded in the governance log alongside the original proposal, so the diff between what the agent produced and what you approved is permanently traceable.
+
+**Reject** — send the component back with a reason. The rejected component re-runs through its relevant agent with your reason attached. Your rejection reason is logged and feeds into pipeline performance tracking.
+
+**Escalate** — flag the full run for senior review. The pipeline pauses until the escalation is resolved. Use escalation when a run surfaces something that needs a second set of eyes before any component proceeds.
+
+## Partial approval
+
+You review the three gate components independently — you are not forced to make a single approve-or-reject decision on the entire run.
+
+You can approve the content DIFF package and reject the communications draft, or vice versa. A rejected component re-runs only through its relevant agent. The rest of the run is not discarded. This means a drafting issue in the communications message does not invalidate content proposals you are satisfied with.
+
+## The gate is not optional
+
+There is no bulk-approve flow, no administrative override, and no scheduled autonomous publish. Every pipeline run that produces output requires an explicit human decision on each component before anything reaches production.
+
+This is not a policy constraint — it is enforced at the architecture level. The pipeline has no pathway to publication that bypasses the approval gate.
+
+<CardGroup cols={2}>
+  <Card title="Reviewing Proposals" icon="clipboard-check" href="/approval/reviewing-proposals">
+    Step-by-step guidance for reviewing the impact manifest, content DIFF packages, and communications draft at the gate.
+  </Card>
+  <Card title="Audit Trail" icon="clock-rotate-left" href="/approval/audit-trail">
+    Every approval action, rejection reason, and pipeline decision is permanently logged. Learn what the audit trail captures and how to query it.
+  </Card>
+</CardGroup>

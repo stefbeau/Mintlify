@@ -1,0 +1,149 @@
+---
+title: 'Core Concepts: How the Pipeline Thinks'
+sidebarTitle: 'Core Concepts'
+description: 'Understand the key concepts behind the Agentic Docs Pipeline: change events, routing manifests, impact manifests, DIFF packages, and the approval gate.'
+---
+
+To work effectively with the Agentic Docs Pipeline, you need to understand the data structures and concepts that move through it. Each stage of the pipeline consumes the output of the previous stage, and each output has a specific structure and purpose. This page explains the five core concepts — change events, routing manifests, impact manifests, DIFF packages, and the approval gate — plus the confidence scoring and severity system that runs across all of them.
+
+## Change events
+
+A change event is a structured document that describes a product change. It is the pipeline's only input — everything that follows is derived from it. Change events are not free-form text; they are machine-readable JSON with a defined schema so the Intake agent's deterministic detectors can classify them reliably.
+
+The key fields in a change event are:
+
+| Field | Description |
+|-------|-------------|
+| `change_id` | A unique identifier for this change. Used to link the full audit trail back to its source. |
+| `change_type` | The nature of the change: `new_feature`, `enhancement`, `deprecation`, or `fix`. |
+| `scope` | How broadly the change applies: `single` (one product area), `cross_product`, or `platform_wide`. |
+| `audience` | Who the change affects: `internal`, `client`, or `developer`. |
+| `urgency` | How quickly the documentation update is needed: `routine`, `expedited`, or `emergency`. |
+| `summary` | A short description of what changed. Used in retrieval and communications drafting. |
+| `detail` | A full description of the change, including behaviour, scope, and user impact. |
+
+## The routing manifest
+
+The routing manifest is what the Intake agent produces after classifying a change event. It is a structured classification across eight dimensions — a machine-readable decision about how the rest of the pipeline should handle this particular change.
+
+```json
+{
+  "change_id": "chg-2026-0042",
+  "routing_manifest": {
+    "change_type": "enhancement",
+    "scope": "single",
+    "audience": "client",
+    "urgency": "routine",
+    "notify_trigger": true,
+    "content_trigger": true,
+    "review_trigger": true,
+    "escalation_trigger": false
+  },
+  "classification_method": "deterministic",
+  "llm_used": false,
+  "confidence": 0.97
+}
+```
+
+The eight classification dimensions, and what they control:
+
+| Dimension | What it classifies |
+|-----------|-------------------|
+| `change_type` | The nature of the change: new feature, enhancement, deprecation, or fix |
+| `scope` | Whether the change affects a single area, multiple products, or the whole platform |
+| `audience` | Whether the affected documentation is internal, client-facing, or developer-facing |
+| `urgency` | How quickly the pipeline should process and surface the update |
+| `notify_trigger` | Whether the Communications agent should draft a client announcement |
+| `content_trigger` | Whether the Content Prep agent should draft documentation updates |
+| `review_trigger` | Whether a full quality review pass is required after approval |
+| `escalation_trigger` | Whether the run should be escalated to human review before any downstream agent fires |
+
+The routing manifest uses zero LLM — all eight detectors are deterministic rule-based functions. This makes every routing decision auditable and reproducible.
+
+## The impact manifest
+
+The impact manifest is what the Impact Analysis agent produces. It identifies which pages in your corpus are affected by the change, ranks them by severity, and explains why each page was flagged. This is the foundation on which Content Prep builds its drafts.
+
+```json
+{
+  "run_id": "run-8f3a2c1d",
+  "change_id": "chg-2026-0042",
+  "affected_pages": [
+    {
+      "page_id": "doc-reporting-dashboard",
+      "title": "Reporting Dashboard Overview",
+      "severity": "high",
+      "relevance_score": 0.94,
+      "rationale": "Page describes the reporting dashboard toolbar and available export options — directly affected by the new bulk export feature."
+    },
+    {
+      "page_id": "doc-data-exports",
+      "title": "Exporting Your Data",
+      "severity": "high",
+      "relevance_score": 0.91,
+      "rationale": "Page covers all data export methods. Bulk export is a new method not currently documented."
+    },
+    {
+      "page_id": "doc-report-views",
+      "title": "Working with Report Views",
+      "severity": "medium",
+      "relevance_score": 0.72,
+      "rationale": "Page references toolbar controls in report views. Export button placement should be reflected here."
+    }
+  ],
+  "total_affected": 4,
+  "confidence": 0.91
+}
+```
+
+## The DIFF package
+
+The DIFF package is what the Content Prep agent produces for each affected page. Rather than returning a raw text block, the agent produces a machine-readable structure that shows exactly what it proposes to change and why — making review at the approval gate fast and precise.
+
+```json
+{
+  "page_id": "doc-data-exports",
+  "diff": {
+    "current_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV format.",
+    "proposed_content": "You can export data from individual report views using the Export button in the top-right toolbar. Exports are available in CSV and XLSX format. To export large datasets, use the bulk export option, which supports up to 10,000 rows. Bulk exports are processed asynchronously — you will receive an email when your file is ready to download.",
+    "change_rationale": "The enhancement adds XLSX as an export format and introduces bulk export for large datasets. Both additions need to be reflected in this page.",
+    "confidence": 0.93
+  }
+}
+```
+
+The DIFF package feeds directly into the approval gate interface, where you review current content and proposed content side by side.
+
+## The approval gate
+
+The approval gate is the mandatory human checkpoint between Stage 4 (drafting) and Stage 5 (quality review). When the pipeline reaches the gate, it pauses and surfaces the impact manifest, content diff, and communications draft for your review.
+
+You can approve, edit, or reject each component independently. Nothing proceeds until every component has an explicit decision. The gate is enforced at the architecture level — there is no administrative override, no bulk-approve flow, and no way to schedule autonomous publishing.
+
+For a full explanation of the gate's design and rationale, see [The Approval Gate](/approval/human-in-the-loop).
+
+## Confidence scores
+
+Every agent output carries a confidence score between 0 and 1. Confidence scores represent the agent's certainty in its output given the available inputs — they are not a quality guarantee, but a signal for where to focus your review time.
+
+<Tip>
+  Confidence scores are your signal for where to focus your review time. Low-confidence proposals are highlighted at the approval gate.
+</Tip>
+
+Confidence scores work as follows across the pipeline:
+
+- **Orchestrator**: If the incoming change event cannot be routed with sufficient confidence, the run escalates to human review immediately — before any downstream agent fires.
+- **Intake agent**: The routing manifest carries a confidence score for the overall classification. High confidence (above ~0.90) indicates the deterministic detectors found clear signal. Lower scores flag ambiguous inputs.
+- **Impact Analysis**: Each affected page carries an individual relevance score. Pages near the relevance threshold are included but flagged for closer scrutiny.
+- **Content Prep**: Each DIFF package carries a confidence score for the proposed edit. Low-confidence proposals are highlighted at the approval gate so you know which suggestions deserve the most attention.
+
+## Severity levels
+
+The impact manifest assigns a severity level to each affected page. Severity reflects how significantly the documented change affects that page's content — it is not a priority override for your review workflow, but a guide for where the most substantial updates are needed.
+
+| Severity | Meaning |
+|----------|---------|
+| `critical` | The page directly documents the changed feature as its primary subject. Without an update, the page contradicts the current product. |
+| `high` | The page substantially covers the changed area. The update is necessary for accuracy and completeness. |
+| `medium` | The page references the changed feature or area. An update is needed for consistency, though the page is not primarily about the change. |
+| `low` | The page has an indirect relationship to the change — for example, a related feature or shared terminology. Review recommended but the impact is limited. |

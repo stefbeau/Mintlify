@@ -1,0 +1,102 @@
+---
+title: 'MCP Tool Design: Reliable Agent-Data Interfaces'
+sidebarTitle: 'MCP Tool Design'
+description: 'Design MCP tools that agents can call reliably in production — covering single-responsibility tools, structured outputs, typed errors, and write tool guardrails.'
+---
+
+MCP tools are the interface between your agents and live data — page content, metadata, search indexes, approval status, external systems. Getting tool design right is the difference between a pipeline that works in demos and one that works in production. A poorly designed tool produces unpredictable agent behaviour that is difficult to attribute and expensive to debug. A well-designed tool is a reliable, testable contract between your agent and the data it needs.
+
+## Core principles
+
+Four principles underpin reliable MCP tool design:
+
+- **One tool, one responsibility.** A tool that fetches page content and also updates metadata is two tools collapsed into one. Split them. Single-responsibility tools are independently testable, independently versioned, and easy to replace when the underlying data source changes. An agent that calls `get_page_content` should always get page content — nothing else.
+
+- **Deterministic inputs, structured JSON outputs.** Tool inputs should be typed and validated. Tool outputs should be structured JSON, never free text that an agent has to parse. An agent that receives a structured output can extract fields reliably. An agent that receives a text blob has to interpret it — introducing non-determinism at the data layer before the agent has even started reasoning.
+
+- **Fail loudly and specifically.** Return typed error responses, not generic failures. An agent that receives `PAGE_NOT_FOUND` knows the page doesn't exist and can act accordingly. An agent that receives "something went wrong" cannot distinguish a missing page from a network timeout from an authentication failure — and will behave differently and unpredictably in each case.
+
+- **Tools do not make decisions.** MCP tools retrieve, fetch, search, and write. They do not classify, evaluate, score, or recommend. A tool that returns "this page needs updating" has crossed into agent territory. Keep tools as pure data access operations and let agents do the reasoning.
+
+## Structured outputs vs. text blobs
+
+The difference between a structured output and a text blob is the difference between a reliable contract and a parsing problem:
+
+```json
+// Good — structured output
+{
+  "page_id": "guide-authentication",
+  "title": "Authentication Guide",
+  "content": "...",
+  "last_updated": "2025-03-14T10:22:00Z",
+  "status": "published"
+}
+```
+
+```json
+// Avoid — text blob
+"Page title: Authentication Guide\nLast updated: March 14 2025\nStatus: published\nContent: ..."
+```
+
+With the structured output, an agent extracts `last_updated` with a single field access. With the text blob, the agent has to parse a string — and your pipeline now has a second source of non-determinism: the agent's parser, not just the agent's reasoning. Structured outputs eliminate that class of failure entirely.
+
+## Typed error responses
+
+Define your error taxonomy and return specific error types from every tool:
+
+```json
+// Good — typed error
+{
+  "error": "PAGE_NOT_FOUND",
+  "page_id": "guide-authentication",
+  "message": "No page exists with this identifier"
+}
+```
+
+```json
+// Avoid — generic error
+{
+  "error": "An error occurred"
+}
+```
+
+Typed errors matter because agents make branching decisions based on tool responses. An agent that receives `PAGE_NOT_FOUND` can flag the affected page ID and continue. An agent that receives `AUTHENTICATION_FAILED` knows to escalate rather than retry. An agent that receives a generic error string has to guess — and will often guess wrong. Define at minimum: `PAGE_NOT_FOUND`, `AUTHENTICATION_FAILED`, `PERMISSION_DENIED`, `VALIDATION_ERROR`, and `UPSTREAM_TIMEOUT`.
+
+## Tool categories
+
+The pipeline's MCP tools fall into five categories:
+
+| Category | Examples | Notes |
+|---|---|---|
+| **Retrieval** | `get_page_content`, `get_page_metadata` | Most frequently called; cache where appropriate |
+| **Write** | `update_page_draft`, `publish_approved_content` | Require approval gate before calling; see guardrails below |
+| **Search** | `vector_search`, `keyword_search`, `find_related_pages` | Parameterise by scope to avoid full-corpus searches |
+| **Metadata** | `get_change_event`, `get_approval_status`, `get_run_log` | Read-only; fast |
+| **Notification** | `draft_email`, `queue_notification` | Draft only — no send capability in pipeline tools |
+
+## Write tool guardrails
+
+Tools that modify the corpus or dispatch communications carry the most risk in the pipeline. Every write tool must implement three guardrails:
+
+1. **Check approval status before executing.** A write tool called before the approval gate has cleared should return a typed error — not proceed silently. Approval status is a precondition, not an assumption.
+
+2. **Log every call** with the caller identity, timestamp, and the full payload written. Write operations must leave an audit trail. A write that isn't logged is a write you cannot investigate.
+
+3. **No send capability in pipeline tools.** Notification tools produce drafts. Dispatch — actually sending a communication — is a separate, post-approval action that happens outside the pipeline. Pipeline tools that can send communications bypass the approval gate by design. Do not build them.
+
+## FastMCP implementation note
+
+FastMCP returns responses in SSE (Server-Sent Events) format, even for single-result calls. Parse the response correctly or the payload will be unreachable:
+
+```javascript
+// Correct — parse SSE lines
+const lines = responseText.split('\n');
+const dataLine = lines.find(l => l.startsWith('data: '));
+const payload = JSON.parse(dataLine.replace('data: ', ''));
+```
+
+Calling `response.json()` directly will fail — the response body is not raw JSON. Set `Accept: application/json, text/event-stream` in your request headers to signal that your client handles the SSE format.
+
+<Tip>
+Test MCP tools independently of agent behaviour. An agent test that fails because the underlying tool returned unexpected data is harder to debug than a tool test that catches the issue directly.
+</Tip>

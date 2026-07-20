@@ -1,0 +1,57 @@
+---
+title: 'Intake Agent: Deterministic Change Classification'
+sidebarTitle: 'Intake'
+description: 'The Intake agent classifies every change event using eight rule-based detectors — zero LLM, fully auditable routing that determines which downstream agents fire.'
+---
+
+The Intake agent is the classification layer of the pipeline. Every product change event passes through it before any downstream work begins. The agent runs eight independent, rule-based detectors against the incoming event payload and assembles their outputs into a routing manifest — the structured document that tells the Orchestrator exactly which agents this run requires.
+
+Because the Intake agent uses zero LLM, every classification decision is deterministic: the same input always produces the same output. There is no reasoning involved, no probabilistic inference, and no variation between runs.
+
+## The eight detectors
+
+Each detector has a single classification responsibility and runs independently. All eight run on every event.
+
+| Detector | What it classifies | Output values |
+|----------|--------------------|---------------|
+| `detect_change_type` | The nature of the change | `new_feature` / `enhancement` / `deprecation` / `fix` |
+| `detect_scope` | How broadly the change affects the product | `single` / `cross_product` / `platform` |
+| `detect_audience` | Who is affected by the change | `internal` / `client` / `developer` |
+| `detect_urgency` | How quickly the change needs to be processed | `routine` / `expedited` / `emergency` |
+| `detect_notify_trigger` | Whether a communications message is required | `required` / `not_required` / `uncertain` |
+| `detect_content_trigger` | Whether a documentation update is required | `required` / `not_required` / `uncertain` |
+| `detect_review_trigger` | Whether a full quality review is required | `required` / `not_required` |
+| `detect_escalation_trigger` | Whether human review is required before proceeding | `escalate` / `proceed` |
+
+## The routing manifest
+
+The eight detector outputs are assembled into a routing manifest — a structured JSON document consumed by the Orchestrator to build the execution plan for the run.
+
+```json
+{
+  "change_type": "enhancement",
+  "scope": "single",
+  "audience": "client",
+  "urgency": "routine",
+  "notify_trigger": "required",
+  "content_trigger": "required",
+  "review_trigger": "required",
+  "escalation_trigger": "proceed",
+  "confidence": 0.94,
+  "detector_version": "2.1.0"
+}
+```
+
+The Orchestrator reads this manifest and dispatches only the agents the run actually needs. In the example above, all three downstream triggers are `required`, so the full agent chain fires. A different event — one with `content_trigger: not_required` and `notify_trigger: not_required` — would produce a much shorter execution plan.
+
+## Why zero LLM?
+
+Routing is the most consequential decision point in the pipeline: a classification error here propagates through every downstream stage. Using an LLM for classification would introduce non-determinism at exactly the wrong place.
+
+Deterministic rule detectors make every routing decision auditable and reproducible. If a change event is classified unexpectedly, you can trace the decision to the exact rule that fired — not to probabilistic inference that is difficult to inspect or reproduce.
+
+`uncertain` is a first-class output for the `notify_trigger` and `content_trigger` detectors, not an error state. When a detector cannot confidently classify a trigger from the available inputs, `uncertain` routes the decision to the Orchestrator's confidence gating logic, which surfaces it for your review. Forcing a binary output on genuinely ambiguous inputs would produce confident wrong answers.
+
+<Tip>
+The `detector_version` field in the routing manifest lets you trace any routing decision back to the exact version of the triage logic that produced it. If detector logic is updated and you see a routing change on a familiar change type, the version field tells you exactly when and what changed.
+</Tip>

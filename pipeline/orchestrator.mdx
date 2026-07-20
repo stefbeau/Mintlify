@@ -1,0 +1,65 @@
+---
+title: 'Orchestrator: Pipeline Entry Point and Coordinator'
+sidebarTitle: 'Orchestrator'
+description: 'The Orchestrator validates your change event payload, interprets the routing manifest, and manages agent dispatch, confidence gating, and error recovery.'
+---
+
+The Orchestrator is the entry point for every pipeline run. It receives your product change event, validates the payload before any work begins, reads the routing manifest produced by the Intake agent, and builds the minimal execution plan for the run. It then manages each agent dispatch in sequence — constructing the handoff package each agent needs, evaluating confidence at every stage transition, and escalating to you whenever a signal falls below threshold.
+
+The Orchestrator does not draft, evaluate, or publish anything. Its job is coordination, routing, and confidence gating.
+
+## Payload validation
+
+Before any downstream agent fires, the Orchestrator validates the incoming change event payload against three requirements:
+
+- **Required fields** — All mandatory fields must be present and correctly typed.
+- **Unique change ID** — The change event identifier must be unique. Duplicate event IDs are rejected to prevent the same change from being processed twice.
+- **Schema version** — The payload must match the expected schema version.
+
+<Note>
+Malformed payloads are rejected immediately. The pipeline does not proceed on a payload that fails validation — an error is logged and surfaced to you before any agent fires.
+</Note>
+
+## Routing
+
+After validation, the Orchestrator reads the routing manifest produced by the Intake agent and builds the execution plan for the run. The manifest contains typed classification signals that tell the Orchestrator exactly which agents this change requires.
+
+| Routing signal | Value | Orchestrator action |
+|----------------|-------|---------------------|
+| `content_trigger` | `required` | Dispatch Impact Analysis and Content Prep |
+| `content_trigger` | `not_required` | Skip Impact Analysis and Content Prep |
+| `notify_trigger` | `required` | Dispatch Communications |
+| `notify_trigger` | `not_required` | Skip Communications |
+| `review_trigger` | `required` | Dispatch Quality Review |
+| `review_trigger` | `not_required` | Skip Quality Review |
+| `escalation_trigger` | `escalate` | Surface to human review before proceeding |
+| `escalation_trigger` | `proceed` | Continue with standard sequencing |
+| `urgency` | `emergency` | Apply expedited sequencing |
+
+The result is a minimal execution plan — only the agents this specific run actually needs are dispatched. Agents are not called unnecessarily.
+
+## Confidence gating
+
+Every agent produces a confidence score alongside its output. The Orchestrator evaluates that score at each stage transition and decides whether to proceed, flag, or escalate.
+
+| Confidence level | Orchestrator behaviour |
+|-----------------|------------------------|
+| **High** (at or above threshold) | Proceed to the next stage automatically |
+| **Medium** (near threshold) | Proceed, but flag the output for closer attention at the approval gate |
+| **Low** (below threshold) | Stop and escalate to you immediately — before any downstream agent fires |
+
+<Note>
+Low-confidence signals are surfaced to you immediately — before downstream agents fire — to prevent poor-quality proposals from wasting pipeline compute. You decide whether to proceed, redirect, or discard the run.
+</Note>
+
+## Error handling
+
+The Orchestrator handles agent failures without collapsing the entire run. The response depends on the type of failure.
+
+| Failure type | What happened | Orchestrator response |
+|-------------|---------------|----------------------|
+| **Transient** | Tool timeout, temporary service error | Retry with backoff; log each attempt |
+| **Non-retriable** | Malformed agent output, schema violation | Escalate to you; log the failure with full context |
+| **Partial** | One agent fails, others succeed | Surface the failure at the approval gate; you decide whether to proceed with partial output or restart the run |
+
+There are no silent failures. Every error produces a log entry and a visible signal at the approval gate or in your run log.

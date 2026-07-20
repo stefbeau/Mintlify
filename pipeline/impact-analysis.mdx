@@ -1,0 +1,65 @@
+---
+title: 'Impact Analysis: Which Pages Need Updating'
+sidebarTitle: 'Impact Analysis'
+description: 'The Impact agent uses semantic vector search to find affected documentation pages, score their severity, and produce a ranked manifest for the Content Prep stage.'
+---
+
+The Impact agent searches your entire documentation corpus to find every page affected by the incoming product change. It uses semantic vector search to retrieve pages by meaning rather than by exact keyword, scores each result by severity, and produces a ranked impact manifest that the Content Prep agent uses to prioritise its drafting work.
+
+## How pages are found
+
+The Impact agent queries a vector index of your documentation corpus using the change event description as the search input. Unlike keyword search, vector search finds pages that are semantically related to the change — even when those pages use different terminology.
+
+For example, a change described as "updated authentication flow" will surface pages that discuss "login process," "sign-in behaviour," and "session management" — not just pages that contain the phrase "authentication flow." This matters because documentation often describes the same concept under different names, and a keyword search would miss those pages entirely.
+
+The breadth of the search is parameterised by the scope classification in the routing manifest:
+
+| Scope value | Search behaviour |
+|-------------|-----------------|
+| `single` | Targeted search within the affected product's content area |
+| `cross_product` | Broader search across related product areas |
+| `platform` | Full corpus search with platform-level filters |
+
+## Severity scoring
+
+Every page retrieved above the relevance threshold receives a severity score based on how directly it is affected by the change.
+
+| Severity | Meaning |
+|----------|---------|
+| **critical** | Page directly describes the changed feature — must be updated |
+| **high** | Page references the changed feature substantially |
+| **medium** | Page references the changed feature incidentally |
+| **low** | Page may be affected — flagged for your review |
+
+Severity scoring lets the Content Prep agent prioritise its work. Critical and high-severity pages receive fully drafted DIFF packages. Lower-severity pages are flagged in the impact manifest for you to assess at the approval gate.
+
+## The impact manifest
+
+The Impact agent produces a structured impact manifest — the ranked list of affected pages that drives the rest of the pipeline.
+
+```json
+{
+  "run_id": "...",
+  "pages_affected": 4,
+  "pages": [
+    {
+      "page_id": "authentication/api-keys",
+      "severity": "critical",
+      "relevance_score": 0.94,
+      "change_rationale": "This page directly describes the API key authentication flow that is being updated."
+    },
+    {
+      "page_id": "quickstart",
+      "severity": "high",
+      "relevance_score": 0.81,
+      "change_rationale": "Quickstart references API key creation in Step 3."
+    }
+  ]
+}
+```
+
+Each entry includes the page identifier, severity score, relevance score, and a short rationale explaining why the page is affected. The rationale gives you enough context to make a quick review decision at the approval gate without needing to open the full page.
+
+<Note>
+The Impact agent errs toward inclusion rather than exclusion. A false positive surfaces at the approval gate for your review; a missed page would be a silent gap in your documentation. You can dismiss false positives during review — they cost a few seconds. A missed page is invisible until a user finds it.
+</Note>

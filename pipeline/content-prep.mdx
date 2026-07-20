@@ -1,0 +1,50 @@
+---
+title: 'Content Prep: Drafting Documentation Updates'
+sidebarTitle: 'Content Prep'
+description: 'The Content Prep agent drafts documentation updates as structured DIFF packages — showing exactly what changes, why, and with what confidence, ready for human review.'
+---
+
+The Content Prep agent takes the ranked impact manifest from the Impact Analysis stage and drafts a proposed update for each affected page. Rather than producing free-form rewrites, it outputs a structured DIFF package for each page — showing the current content, the proposed replacement, the rationale connecting the change to the product update, and a confidence score. Everything you need to make a quick, informed review decision is in the package.
+
+## The DIFF package
+
+For every affected page, the Content Prep agent produces a DIFF package in the following structure:
+
+```json
+{
+  "page_id": "authentication/api-keys",
+  "severity": "critical",
+  "change_type": "update",
+  "current_content": "API keys are valid for 90 days and must be rotated manually.",
+  "proposed_content": "API keys are valid for 365 days. Automatic rotation is available from the Security settings panel.",
+  "change_rationale": "The key validity period was extended and automatic rotation was introduced in this release.",
+  "confidence": 0.87,
+  "dependencies": ["security/key-rotation"]
+}
+```
+
+The `current_content` and `proposed_content` fields are surfaced side by side at the approval gate so you can see exactly what is changing and nothing else. The `change_rationale` connects the proposal to the product change event, so you can evaluate whether the proposed change is accurate and complete.
+
+## How proposals are scoped
+
+The Content Prep agent follows a minimal change principle: it changes only what the product update requires, and nothing else.
+
+It does not restructure pages, improve content it judges to be unclear, or apply style improvements beyond the scope of the release. It preserves the voice, terminology conventions, and formatting of the existing page. If the current page uses second person, the draft uses second person. If the current page uses a specific term consistently, the draft maintains that term.
+
+This keeps proposals focused and review straightforward. You are evaluating a specific, bounded change — not a page-wide rewrite.
+
+## Dependency flagging
+
+When a proposed change on one page has implications for other pages, those pages are listed in the `dependencies` array of the DIFF package. This gives you visibility into cross-page relationships without automatically expanding the scope of the current run.
+
+At the approval gate, you can choose to address flagged dependencies in the same run — by creating additional proposals — or start a separate pipeline run that focuses on those pages. The pipeline never creates cascading automatic changes without your direction.
+
+## Reviewing DIFF packages
+
+At the approval gate, each DIFF package is presented with the current and proposed content side by side, the change rationale, and the confidence score. You can approve the proposal as drafted, edit it before approving, or reject it entirely. Every decision is logged.
+
+For more detail on the review experience, see [Reviewing Proposals](/approval/reviewing-proposals).
+
+<Tip>
+Confidence scores are your triage signal. High-confidence proposals on critical pages can be approved quickly. Low-confidence proposals deserve closer scrutiny — they may be accurate but uncertain, or they may be pointing at a more complex change that needs your judgement.
+</Tip>

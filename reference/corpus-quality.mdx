@@ -1,0 +1,59 @@
+---
+title: 'Documentation as AI Data Quality Infrastructure'
+sidebarTitle: 'Corpus Quality'
+description: 'Why documentation accuracy is an AI data quality problem — and how an automated pipeline addresses drift in the retrieval corpora powering your LLM features.'
+---
+
+In organisations running LLM-powered features, documentation accuracy is not just a UX concern — it is an AI data quality problem. When your knowledge base drifts out of sync with your product, you are not simply leaving users with a confusing help page. You are corrupting the retrieval corpus that your AI features depend on to generate accurate, grounded responses.
+
+## How documentation drift breaks AI
+
+Most LLM-powered product features — chatbots, semantic search, AI-assisted workflows — do not run on the model's built-in knowledge alone. They use Retrieval-Augmented Generation (RAG): at query time, the model retrieves relevant content from your corpus, injects it into context, and generates a response grounded in what it found. RAG is the dominant pattern for enterprise AI because it lets the model answer questions about specific, current, proprietary information that was never in its training data.
+
+That architecture has a dependency that is easy to overlook: the quality of the model's output is bounded by the quality of the content it retrieves. A model that retrieves accurate, current documentation produces accurate, grounded responses. A model that retrieves stale or contradictory documentation produces responses that are confidently wrong.
+
+<Warning>
+  Your AI features cannot tell the difference between accurate and stale documentation. They generate responses as if every retrieved page were authoritative.
+</Warning>
+
+## How drift accumulates
+
+Documentation drift — the gap between what your knowledge base says and what your product currently does — builds up through four recurring sources:
+
+- **Product changes without documentation updates** — the most common source. A feature changes, the release is filed, and the documentation update never happens or happens incompletely.
+- **Partial updates** — one page is updated, but three related pages that reference the same feature are not.
+- **Deprecated content** — pages describing features that no longer exist, or exist differently, remain in the corpus and continue to surface in retrieval.
+- **Terminology drift** — your product team adopts new terminology, but your documentation still uses the old terms, causing retrieval to match on surface form rather than meaning.
+
+In a small knowledge base, drift is manageable through manual review cycles. In a knowledge base of tens of thousands of pages, manual review does not scale. Drift accumulates faster than it can be addressed.
+
+## The data quality framing
+
+In data engineering, a pipeline that produces stale or inconsistent data is a broken pipeline. The downstream systems that consume that data — models, dashboards, reports — are only as reliable as the data they receive.
+
+The same logic applies to your documentation corpus. A documentation pipeline that allows drift to accumulate is producing degraded data. Every LLM feature that retrieves from that corpus is operating on degraded inputs. The degradation is invisible at the retrieval layer — the vector index does not flag stale content. It surfaces only in the quality of the model's outputs, which is harder to monitor and harder to trace back to its source.
+
+Framing documentation maintenance as data quality work changes the urgency calculus. The question is no longer whether the help page is up to date. The question is whether your AI product's outputs are reliable.
+
+## What the pipeline addresses
+
+The pipeline responds to each product change event and produces a targeted update proposal at the time of the change. Instead of waiting for a manual review cycle to catch stale content, you review and approve a specific, traceable proposal — and the corpus stays current.
+
+| Without pipeline | With pipeline |
+|-----------------|---------------|
+| Drift accumulates between review cycles | Each change event triggers a targeted update |
+| Stale content surfaces in retrieval | Corpus reflects current product state |
+| AI responses grounded in outdated content | AI responses grounded in current content |
+| Drift source is invisible | Every update is traceable to a change event |
+| Manual review does not scale | Automated detection scales with change volume |
+
+## Practical implications for documentation teams
+
+**Documentation velocity matters differently now.**
+A documentation update that ships two weeks after a product change means two weeks of AI responses grounded in stale content — at scale, for every user who queried the product during that window. Velocity is no longer just a publishing metric; it is a data freshness metric.
+
+**Coverage matters as much as quality.**
+A well-written page that covers 80% of a feature leaves a retrieval gap. The model retrieves the page, generates a confident response, and leaves the remaining 20% unaddressed — or fills it from parametric knowledge that may be wrong. Complete coverage of your corpus is a data completeness requirement, not just a documentation standard.
+
+**Terminology consistency is a retrieval requirement.**
+Inconsistent terminology across your corpus fragments retrieval. If some pages use an old term and some use a new term for the same concept, queries using either term will miss half the relevant content. Terminology governance is index hygiene.

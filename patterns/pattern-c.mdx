@@ -1,0 +1,129 @@
+---
+title: 'Pattern C: Deterministic-First Agent Design'
+sidebarTitle: 'Pattern C'
+description: 'Pattern C separates pipeline work into deterministic rules and LLM judgment — defaulting to auditable rule-based code and reserving AI for tasks that genuinely require reasoning.'
+---
+
+Pattern C is a design principle for agentic pipelines that separates every stage of work into two categories: **deterministic** (rule-based, auditable, cheap) and **judgment** (LLM-driven, context-dependent, justified). Rather than reaching for an LLM at every step, you default to deterministic code and only introduce an agent where genuine reasoning is required and cannot be reduced to a rule.
+
+## The core rule
+
+**Default to deterministic. Use LLM only where judgment is genuinely required and cannot be reduced to a rule.**
+
+This rule exists because LLMs carry real costs that compound at pipeline scale:
+
+- **Expensive** — every token costs money; a pipeline that uses LLM for every step accumulates those costs across every run
+- **Non-deterministic** — the same input can produce a different output on each call, making behaviour hard to predict or reproduce
+- **Slow** — LLM inference is orders of magnitude slower than rule-based code
+- **Opaque** — when an LLM-driven step produces a wrong answer, there is no execution trace to inspect
+
+A pipeline that applies LLM to every stage inherits all four of these properties everywhere. Pattern C constrains LLM usage to the stages where it earns its cost, leaving the rest of the pipeline fast, auditable, and testable.
+
+## Three layers
+
+Every stage in a Pattern C pipeline is structured as three layers:
+
+### Pre-script (deterministic)
+
+The pre-script runs before any agent fires. It handles everything that can be determined from the raw input without reasoning:
+
+- Input validation and normalisation
+- Variable extraction — dates, identifiers, structured fields
+- Template selection based on explicit rules
+- Routing signal preparation
+
+No LLM touches this layer. Every decision the pre-script makes is a deterministic function of the input — fully unit-testable and cheap to run.
+
+### Bounded agent (LLM, constrained)
+
+The bounded agent receives the clean, structured context produced by the pre-script and performs a single, narrow judgment task:
+
+- Draft a communications message in a specific voice
+- Score the relevance of a document to a change description
+- Evaluate a content block against a named rule
+- Generate a structured diff between current and proposed content
+
+The agent's scope is deliberately narrow. It does not have access to the full pipeline state and does not make routing decisions. It produces one output and stops. Narrow scope makes agent behaviour predictable and testable — a bounded agent that drafts communications messages should always produce a communications message, nothing else.
+
+### Post-script (deterministic)
+
+The post-script runs after the agent and handles everything that can be determined from the agent's output without further reasoning:
+
+- Output validation — required fields present, format correct
+- Envelope construction — wrapping the output in the expected handoff structure
+- Anomaly flagging — output outside expected bounds
+- Audit log entry
+
+Like the pre-script, this layer contains no LLM. Every check it performs is a deterministic function of the agent output.
+
+## Applied: Intake triage
+
+The intake triage stage classifies incoming change events and produces a routing manifest. A naive implementation would pass the raw event to an LLM and ask it to classify. Pattern C rejects this — classification here is a structured problem that can be solved entirely with rule-based detectors.
+
+```
+Raw change event
+      │
+      ▼
+┌─────────────────────────────┐
+│  Pre-script                 │
+│  8 deterministic detectors  │  ← Zero LLM
+│  Rule-based classification  │
+└─────────────┬───────────────┘
+              │
+              ▼
+     Structured routing manifest
+```
+
+Each detector is a function that takes the event payload and returns a typed classification signal:
+
+| Detector | Output values |
+|---|---|
+| `detect_change_type` | `new_feature` / `enhancement` / `deprecation` / `fix` |
+| `detect_scope` | `single` / `cross_product` / `platform` |
+| `detect_audience` | `internal` / `client` / `developer` |
+| `detect_urgency` | `routine` / `expedited` / `emergency` |
+| `detect_notify_trigger` | `required` / `not_required` / `uncertain` |
+| `detect_content_trigger` | `required` / `not_required` / `uncertain` |
+| `detect_review_trigger` | `required` / `not_required` |
+| `detect_escalation_trigger` | `escalate` / `proceed` |
+
+All eight detectors run on every event. Their outputs are assembled into the routing manifest. Every routing decision is a deterministic function of the input — fully auditable, unit-testable, and free of LLM cost.
+
+## Applied: Quality review
+
+The quality review stage evaluates content against 77 rules across three categories. A naive approach would pass all 77 rules and the content to a single LLM call and ask for a findings list. Pattern C rejects this too — not because it's impossible, but because it creates context window pressure, rule interference, and outputs that are difficult to trace back to specific rules.
+
+Instead, you split the rule set across three bounded sub-agents, each owning one category:
+
+```
+Approved content
+      │
+      ├──▶ Prose sub-agent    (39 rules) ──▶ Prose findings
+      ├──▶ Style sub-agent    (19 rules) ──▶ Style findings
+      └──▶ Terminology agent  (19 rules) ──▶ Terminology findings
+                                                    │
+                                                    ▼
+                                          Consolidated findings payload
+```
+
+Each sub-agent receives only its rule set and the content to evaluate. It produces a structured findings payload with rule IDs, severity levels, and remediation suggestions. Findings are traceable to specific rules. Individual sub-agents can be retested in isolation. Rule sets can be updated without touching the others.
+
+## When to use LLM instead
+
+Pattern C is a default, not a dogma. LLM is the right choice when:
+
+- **Classification requires natural language understanding** — the decision genuinely depends on reading and interpreting unstructured text, not matching fields or patterns
+- **The output space is too large for rules** — the range of valid outputs cannot be enumerated in a rule set
+- **A wrong deterministic rule is worse than LLM non-determinism** — a rule that covers 95% of cases and fails unpredictably on the other 5% may be more dangerous than a bounded LLM judgment
+
+The test: **can you write a unit test for this decision?** If yes, it's deterministic. If no, it may be a genuine judgment task suited to a bounded agent.
+
+## Deterministic vs. LLM at a glance
+
+| Property | Deterministic (pre/post scripts) | LLM (bounded agents) |
+|---|---|---|
+| **Cost** | Minimal | Significant |
+| **Speed** | Fast | Slow |
+| **Auditability** | Complete | Partial |
+| **Testability** | Unit-testable | Integration-testable |
+| **Use when** | Classification, validation, routing, formatting | Drafting, scoring, reasoning, evaluation |
